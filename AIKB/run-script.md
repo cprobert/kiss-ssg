@@ -8,8 +8,10 @@ The command's side of running a site's script: find the script, decide whether t
 
 - `resolveScript(name, cwd, command = 'build')` → `{ file, error }`. `file` is the absolute path of the name as typed, then with `.js`, `.mjs` and `.cjs` (`resolveEntry`, `lib/watcher.js`, the way Node resolves an entry point). A name that is none of them answers the error of spec § 4.4: `no script named production (looked for production, production.js, .mjs, .cjs). The script comes first: kiss-ssg build router.js production`.
 - `engineGate(engine, { cwd, command, exists })` → a refusal string, or `null` to go ahead. `engine` is `describeEngine`'s answer. It refuses when the folder found holds no `lib/run-preload.js`: a capability, not a version, because a version test would refuse the branch's own tarball. No engine found is a pass, as `check` has always gone ahead.
-- `spawnPlan({ command, script, args, reportFile, imagesFile, refresh, env, owner, preload })` → `{ execArgv, args, env, stdio }`. The request is `{ mode, report, aikb, images, imagesRefresh, owner }`, JSON in the `?run=` of this copy's `run-preload.js`, `owner` being this process's pid. `check`, `aikb` and `images` run staged, so their mode is `'check'`, and the five alias variables are exported beside the request for an engine that predates the preload; stdio is `[0, 2, 2]` so stdout carries only the report. `build` exports none, deletes exactly those five names from the environment it was given (`KISS_BUILD`, `KISS_ASSETS` and `KISS_DEV` are untouched), and inherits stdio.
+- `spawnPlan({ command, script, args, reportFile, imagesFile, refresh, restart, env, owner, preload })` → `{ execArgv, args, env, stdio }`. The request is `{ mode, report, aikb, images, imagesRefresh, owner }`, JSON in the `?run=` of this copy's `run-preload.js`, `owner` being this process's pid. `check`, `aikb` and `images` run staged, so their mode is `'check'`, and the five alias variables are exported beside the request for an engine that predates the preload; stdio is `[0, 2, 2]` so stdout carries only the report. `build` exports none, deletes exactly those five names from the environment it was given (`KISS_BUILD`, `KISS_ASSETS` and `KISS_DEV` are untouched), and inherits stdio.
 - `runScript(plan, { spawn, cwd, platform, signals, kill, grace })` → `Promise<{ status, signal, error }>`. On the command's own SIGINT or SIGTERM the child is ended (`taskkill /pid <pid> /T /F` on Windows; elsewhere `SIGTERM` to the child's pid, then `SIGKILL` to it after `grace`, 5 s by default) and the run resolves with a non-zero status, so an interrupted build cannot let `&& firebase deploy` run. `signals` is where those are heard (the process); `kill` sends a signal to a pid. A test passes an emitter and a stub for each.
+
+`dev` is `build`'s request with `mode: 'dev'`, `restart: true` when the supervisor starts a replacement child, and stdio `['inherit', 'inherit', 'inherit', 'ipc']`; `lib/dev-supervisor.js` starts and stops that child itself, so `runScript` is not used for it.
 
 ## Depends on
 
@@ -17,7 +19,7 @@ The command's side of running a site's script: find the script, decide whether t
 
 ## Depended on by
 
-`bin/kiss-ssg.js` (`build`, `check`, `aikb`, `images`); `lib/images-sweep.js` and `lib/check.js` hold the parse and the report decisions it feeds.
+`bin/kiss-ssg.js` (`build`, `check`, `aikb`, `images`); `lib/dev-supervisor.js` (`spawnPlan`); `lib/images-sweep.js` and `lib/check.js` hold the parse and the report decisions it feeds.
 
 ## Non-obvious behavior
 

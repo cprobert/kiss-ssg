@@ -596,6 +596,8 @@ declare class Kiss {
     private _watcher;
     /** @private */
     private _devServer;
+    /** @private */
+    private _keepFolder;
     /** @private @type {Promise<any>} */
     private _assetQueue;
     /** @private @type {ReturnType<typeof createPipeline>|null} */

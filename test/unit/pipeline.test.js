@@ -330,6 +330,30 @@ describe('createPipeline() watch processes', () => {
     expect(process.listenerCount('SIGINT')).toBe(before)
   })
 
+  it('ends its watch processes when the process exits, and stops listening with the signals', async () => {
+    // A process that ends without a signal (a crash, process.exit, a script
+    // that returns) would leave a --watch compiler behind.
+    const before = process.listenerCount('exit')
+    pipeline = createPipeline({
+      steps: [{ name: 'w', run: run('1'), watch: forever }],
+      logger,
+      dev: true,
+    })
+
+    await pipeline.run()
+    expect(process.listenerCount('exit')).toBe(before + 1)
+    const [exitGuard] = process.listeners('exit').slice(-1)
+    const pids = pipeline.watching()
+    expect(pids).toEqual(['w'])
+
+    exitGuard()
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+    expect(pipeline.watching()).toEqual([])
+
+    await pipeline.close()
+    expect(process.listenerCount('exit')).toBe(before)
+  })
+
   it('does not start a watch process for a step whose run failed', async () => {
     pipeline = createPipeline({
       steps: [{ name: 'w', run: run('process.exit(1)'), watch: forever }],

@@ -171,8 +171,26 @@ describe('parseArgs', () => {
   })
 
   it('refuses an unknown command', () => {
-    // `dev` is unknown until the command that runs it exists.
-    expect(parseArgs(['dev', 'site.js']).error).toBe('unknown command: dev')
+    expect(parseArgs(['serve', 'site.js']).error).toBe('unknown command: serve')
+  })
+
+  it('dev: the script first, router.js with none, everything after it the script’s', () => {
+    expect(parseArgs(['dev'])).toMatchObject({
+      command: 'dev',
+      script: 'router.js',
+      args: [],
+      error: null,
+    })
+    expect(parseArgs(['dev', 'site.js', '--summary', 'x'])).toMatchObject({
+      command: 'dev',
+      script: 'site.js',
+      args: ['--summary', 'x'],
+      summary: false,
+    })
+    expect(parseArgs(['dev', '--help']).command).toBe('help')
+    expect(parseArgs(['dev', '--summary']).error).toContain(
+      'kiss-ssg dev router.js --summary',
+    )
   })
 
   it('refuses an unknown option rather than passing it to the script', () => {

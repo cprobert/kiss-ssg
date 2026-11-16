@@ -36,7 +36,7 @@ export function engineGate(engine: ReturnType<typeof import("./check.js").descri
  * @property {string[]} execArgv node's own arguments: the preload, with the request in its URL
  * @property {string[]} args the script, then its arguments
  * @property {Record<string, string|undefined>} env
- * @property {'inherit'|[number, number, number]} stdio
+ * @property {'inherit'|[number, number, number]|['inherit', 'inherit', 'inherit', 'ipc']} stdio
  */
 /**
  * The request and the child's environment for one command.
@@ -44,10 +44,12 @@ export function engineGate(engine: ReturnType<typeof import("./check.js").descri
  * `check`, `aikb` and `images` run staged and discarded, so their request is
  * `mode: 'check'`, and the five aliases are exported beside it for an engine
  * that predates the preload. `build` runs for real, exports none and removes
- * them from the caller's environment.
+ * them from the caller's environment. `dev` is `build`'s request with a
+ * channel to the command, and `restart` when it is not the first start.
  *
  * @param {Object} input
- * @param {'build'|'check'|'aikb'|'images'} input.command
+ * @param {'build'|'dev'|'check'|'aikb'|'images'} input.command
+ * @param {boolean} [input.restart] `dev`: this child replaces one the edit stopped
  * @param {string} input.script
  * @param {string[]} [input.args]
  * @param {string} [input.reportFile] the JSON Lines file each settled build appends to
@@ -58,8 +60,9 @@ export function engineGate(engine: ReturnType<typeof import("./check.js").descri
  * @param {string} [input.preload] the `--import` URL of this copy's `run-preload.js`
  * @returns {SpawnPlan}
  */
-export function spawnPlan({ command, script, args, reportFile, imagesFile, refresh, env, owner, preload, }: {
-    command: "build" | "check" | "aikb" | "images";
+export function spawnPlan({ command, script, args, reportFile, imagesFile, refresh, restart, env, owner, preload, }: {
+    command: "build" | "dev" | "check" | "aikb" | "images";
+    restart?: boolean;
     script: string;
     args?: string[];
     reportFile?: string;
@@ -109,7 +112,7 @@ export type SpawnPlan = {
      */
     args: string[];
     env: Record<string, string | undefined>;
-    stdio: "inherit" | [number, number, number];
+    stdio: "inherit" | [number, number, number] | ["inherit", "inherit", "inherit", "ipc"];
 };
 export type RunResult = {
     /**

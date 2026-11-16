@@ -1,5 +1,11 @@
-import { describe, it, expect, afterEach } from 'vitest'
-import { activate, decodeRun, isBuildFailure } from '../../lib/run-preload.js'
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
+import { EventEmitter } from 'node:events'
+import {
+  activate,
+  decodeRun,
+  isBuildFailure,
+  wireChannel,
+} from '../../lib/run-preload.js'
 import { runState } from '../../lib/run-state.js'
 
 const KEY = Symbol.for('kiss-ssg.run')
@@ -70,5 +76,66 @@ describe('activate', () => {
     expect(activate('file:///x/run-preload.js', { ppid: 99, main: true })).toBe(
       false,
     )
+  })
+})
+
+describe('wireChannel', () => {
+  const fakeProcess = () =>
+    Object.assign(new EventEmitter(), {
+      send: () => true,
+      channel: { unref: vi.fn() },
+    })
+  let exit
+  beforeEach(() => {
+    exit = vi.spyOn(process, 'exit').mockImplementation(() => undefined)
+  })
+  afterEach(() => exit.mockRestore())
+
+  it('unrefs the channel after wiring, so it does not hold the child open, and wires once', () => {
+    const proc = fakeProcess()
+    expect(wireChannel(proc)).toBe(true)
+    expect(proc.channel.unref).toHaveBeenCalledOnce()
+    expect(proc.listenerCount('message')).toBe(1)
+    expect(wireChannel(proc)).toBe(false)
+    expect(runState().armed.channel).toBe(true)
+  })
+
+  it('wires nothing in a process with no channel', () => {
+    expect(wireChannel({ on: vi.fn() })).toBe(false)
+    expect(runState().armed.channel).toBe(false)
+  })
+
+  it.each([
+    ['a stop message', (proc) => proc.emit('message', { stop: true })],
+    ['the channel closing', (proc) => proc.emit('disconnect')],
+  ])(
+    '%s closes every live instance, whichever copy made it, then exits 0',
+    async (_name, trigger) => {
+      const instance = { close: vi.fn(async () => {}) }
+      runState().live.add(instance)
+      const proc = fakeProcess()
+      wireChannel(proc)
+
+      trigger(proc)
+
+      await vi.waitFor(() => expect(exit).toHaveBeenCalledWith(0))
+      expect(instance.close).toHaveBeenCalledOnce()
+    },
+  )
+
+  it('ignores a message that is not a stop', async () => {
+    const proc = fakeProcess()
+    wireChannel(proc)
+    proc.emit('message', { serving: true })
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(exit).not.toHaveBeenCalled()
+  })
+
+  it('activate wires it for a dev request only', () => {
+    listenersBefore = process.listeners('uncaughtException')
+    const before = process.listenerCount('message')
+    activate(url({ mode: 'build', owner: 99 }), { ppid: 99, main: true })
+    expect(runState().armed.channel).toBe(false)
+    expect(process.listenerCount('message')).toBe(before)
   })
 })

@@ -2,8 +2,8 @@ import { describe, it, expect, afterEach } from 'vitest'
 import fs from 'fs-extra'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { spawnSync } from 'node:child_process'
-import { makeSite } from '../helpers/site.js'
+import { spawn, spawnSync } from 'node:child_process'
+import { makeSite, waitFor } from '../helpers/site.js'
 
 // How the mode reaches the engine (spec § 4.2, § 4.3): through the preload's
 // request, and through the KISS_* aliases. Each case is a real child process,
@@ -179,6 +179,107 @@ describe('the request and its aliases, one result', () => {
     expect(result.out).toContain('MODE=build')
     expect(result.out).toContain('CHILD MODE=null')
   }, 60000)
+})
+
+// A dev child with a channel, the way `kiss-ssg dev` starts one: this process
+// plays the command, answers the `serve` it hears, and collects what the child
+// sends. Nothing binds a port: the servers are the command's.
+const devChild = (root, { restart = false } = {}) => {
+  const request = {
+    mode: 'dev',
+    owner: process.pid,
+    ...(restart && { restart }),
+  }
+  const child = spawn(
+    process.execPath,
+    [
+      '--import',
+      `${preload}?run=${encodeURIComponent(JSON.stringify(request))}`,
+      'build.js',
+    ],
+    { cwd: root, env: cleanEnv(), stdio: ['ignore', 'pipe', 'pipe', 'ipc'] },
+  )
+  const heard = []
+  let output = ''
+  child.stdout.on('data', (chunk) => (output += chunk))
+  child.stderr.on('data', (chunk) => (output += chunk))
+  child.on('message', (message) => {
+    heard.push(message)
+    if (message.serve) child.send({ serving: true, ...message.serve })
+  })
+  const exited = new Promise((resolve) => child.once('exit', resolve))
+  return {
+    child,
+    heard,
+    output: () => output,
+    stop: async () => {
+      if (child.exitCode === null) child.send({ stop: true })
+      await exited
+    },
+  }
+}
+
+describe('a dev child under the command (spec § 5.3)', () => {
+  it('asks for its server over the channel and, after a build with no failure, sends one reload', async () => {
+    temp = await make()
+    const dev = devChild(temp.root)
+    try {
+      await waitFor(() => dev.heard.some((m) => 'reload' in m), {
+        timeout: 30000,
+      })
+      await new Promise((resolve) => setTimeout(resolve, 300))
+    } finally {
+      await dev.stop()
+    }
+
+    expect(dev.heard.filter((m) => m.serve)).toHaveLength(1)
+    expect(dev.heard.filter((m) => 'reload' in m)).toHaveLength(1)
+    expect(dev.heard[0].serve).toMatchObject({
+      host: '127.0.0.1',
+      port: 3001,
+      livereloadPort: 35729,
+    })
+    expect(dev.output()).not.toContain('Dev server could not bind')
+  }, 60000)
+
+  it('with one failing page, sends no reload', async () => {
+    temp = await make({ 'src/pages/broken.hbs': '{{> "nope"}}' })
+    const dev = devChild(temp.root)
+    try {
+      await waitFor(() => dev.output().includes('nope'), { timeout: 30000 })
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    } finally {
+      await dev.stop()
+    }
+
+    expect(dev.heard.filter((m) => m.serve)).toHaveLength(1)
+    expect(dev.heard.filter((m) => 'reload' in m)).toEqual([])
+  }, 60000)
+
+  it('a restart builds over the folder the last child left, a first start empties it', async () => {
+    temp = await make({ 'public/stale.txt': 'old' })
+
+    const restarted = devChild(temp.root, { restart: true })
+    try {
+      await waitFor(() => restarted.heard.some((m) => 'reload' in m), {
+        timeout: 30000,
+      })
+    } finally {
+      await restarted.stop()
+    }
+    expect(await temp.exists('public/stale.txt')).toBe(true)
+    expect(await temp.exists('public/index.html')).toBe(true)
+
+    const first = devChild(temp.root)
+    try {
+      await waitFor(() => first.heard.some((m) => 'reload' in m), {
+        timeout: 30000,
+      })
+    } finally {
+      await first.stop()
+    }
+    expect(await temp.exists('public/stale.txt')).toBe(false)
+  }, 90000)
 })
 
 describe('whose dev wins (spec § 4.3)', () => {

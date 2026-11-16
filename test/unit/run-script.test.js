@@ -122,6 +122,25 @@ describe('spawnPlan', () => {
     expect(plan.stdio).toBe('inherit')
   })
 
+  it('dev: the build request with a channel, no aliases, and restart only when asked', () => {
+    const env = { PATH: 'x', KISS_CHECK: '1', KISS_BUILD: 'keep' }
+    const first = spawnPlan({ ...base, command: 'dev', env })
+    expect(requestOf(first)).toEqual({
+      mode: 'dev',
+      report: '/tmp/r.jsonl',
+      owner: 41,
+    })
+    expect(first.stdio).toEqual(['inherit', 'inherit', 'inherit', 'ipc'])
+    expect(first.env).toEqual({ PATH: 'x', KISS_BUILD: 'keep' })
+
+    const again = spawnPlan({ ...base, command: 'dev', env, restart: true })
+    expect(requestOf(again)).toMatchObject({ mode: 'dev', restart: true })
+    expect(
+      requestOf(spawnPlan({ ...base, command: 'build', env, restart: true }))
+        .restart,
+    ).toBeUndefined()
+  })
+
   it('check: mode check, the aliases beside it, the log on stderr', () => {
     const plan = spawnPlan({ ...base, command: 'check', env: { PATH: 'x' } })
     expect(requestOf(plan)).toEqual({

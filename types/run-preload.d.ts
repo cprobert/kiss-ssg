@@ -14,6 +14,22 @@ export function decodeRun(url: string): import("./run-state.js").RunRequest | nu
  */
 export function isBuildFailure(err: unknown): boolean;
 /**
+ * The child's end of the dev channel (spec § 5.4): the command's `{ stop: true }`
+ * and the channel closing both close every live instance and end the process
+ * with 0. Then the channel is unref'd, so it does not keep the child alive: a
+ * `message` listener otherwise holds the event loop open for ever and the
+ * child could neither exit by itself nor reach `beforeExit`.
+ *
+ * @param {Pick<NodeJS.Process, 'on'> & { channel?: { unref?: () => void }, send?: unknown }} [proc]
+ * @returns {boolean} whether the channel was wired by this call
+ */
+export function wireChannel(proc?: Pick<NodeJS.Process, "on"> & {
+    channel?: {
+        unref?: () => void;
+    };
+    send?: unknown;
+}): boolean;
+/**
  * Store the request and take ownership of an uncaught build failure, in a
  * process the command owns and nowhere else: a `fork()` or a `Worker` the
  * script starts inherits `execArgv`, so it would otherwise take the mode too.

@@ -13,13 +13,15 @@ Starts the dev-mode static file server (`connect` + `serve-static`) plus a `live
   - `ready` — a `Promise` that resolves on the HTTP server's `'listening'` event, or rejects on a bind failure with the whole message already assembled (`Dev server could not bind <host>:<port> (<code>): the site is not being served`, original error on `cause`). It is the only report of that failure — the module logs nothing for it.
   - `close()` — `Promise` that closes `livereload` then the HTTP server, resolving once both are down.
 
+- `linkDevServer({ root, port, host, livereloadPort }, { send, onMessage })` → `{ ready, refresh, close }`, the same handle for a child `kiss-ssg dev` started, whose servers are the command's (`AIKB/dev-supervisor.md`). It sends `{ serve }`; `ready` resolves on `{ serving: true }` and rejects with the command's message on `{ serveFailed }`, ignoring an answer that names another `host`/`port` (a script with two instances hears both). `refresh(path)` sends `{ reload: path }`. `close()` resolves at once and sends nothing: a restart or a stop must not take down servers the command keeps. `lib/kiss.js` takes it in place of `startDevServer` when the request's mode is `dev` and `process.send` exists.
+
 ## Depends on
 
 `connect`, `serve-static`, `livereload`.
 
 ## Depended on by
 
-`lib/kiss.js`.
+`lib/kiss.js`, `lib/dev-supervisor.js` (`startDevServer`).
 
 ## Non-obvious behavior
 

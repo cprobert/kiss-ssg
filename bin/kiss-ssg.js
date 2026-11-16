@@ -32,6 +32,7 @@ import {
   runScript,
   spawnPlan,
 } from '../lib/run-script.js'
+import { superviseDev } from '../lib/dev-supervisor.js'
 import { runSession } from '../lib/sessions.js'
 import { runBase } from '../lib/base.js'
 import { runIssue } from '../lib/issue.js'
@@ -577,12 +578,22 @@ try {
   // `build` exports no alias, so an engine that cannot read the request is
   // refused before it can build in the wrong mode.
   const refusal =
-    parsed.command === 'build'
-      ? engineGate(engine, { cwd: process.cwd(), command: 'build' })
+    parsed.command === 'build' || parsed.command === 'dev'
+      ? engineGate(engine, { cwd: process.cwd(), command: parsed.command })
       : null
   if (refusal) {
     console.error(refusal)
     process.exit(1)
+  }
+  // `dev` keeps the servers and the script's life; it ends on a signal, 0.
+  if (parsed.command === 'dev') {
+    fs.rmSync(reportDir, { recursive: true, force: true })
+    process.exit(
+      await superviseDev({
+        script: /** @type {string} */ (script.file),
+        args: parsed.args,
+      }).done,
+    )
   }
   // The caller's cwd, not the script's folder: a site resolves `folders`
   // against the cwd it is normally run from, and moving it would check a

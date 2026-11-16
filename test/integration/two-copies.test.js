@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import fs from 'fs-extra'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { makeSite } from '../helpers/site.js'
 
 // Two copies of kiss-ssg in one run (spec § 4.6): the command is this
@@ -134,5 +134,44 @@ describe('the command from this copy, the engine from another', () => {
     })
     expect(run.status).toBe(0)
     expect(run.stdout).toContain('MODE=build')
+  }, 60000)
+
+  it('a stop sent to the preload closes an instance the other copy made', async () => {
+    // This process plays the command. The child's engine asks for a server
+    // over the channel (nothing is bound), settles and would then live on
+    // behind its watcher: it ends only if the preload's stop reached the
+    // instance, which another copy of the engine made.
+    const request = { mode: 'dev', owner: process.pid }
+    const child = spawn(
+      process.execPath,
+      [
+        '--import',
+        `${preload}?run=${encodeURIComponent(JSON.stringify(request))}`,
+        'router.js',
+      ],
+      {
+        cwd: site('ok'),
+        env: env(),
+        stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+      },
+    )
+    const exited = new Promise((resolve) =>
+      child.once('exit', (code, signal) => resolve({ code, signal })),
+    )
+    try {
+      await new Promise((resolve) =>
+        child.on('message', (message) => {
+          if (!message.serve) return
+          child.send({ serving: true, ...message.serve })
+          resolve()
+        }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      expect(child.exitCode).toBeNull()
+      child.send({ stop: true })
+      expect(await exited).toEqual({ code: 0, signal: null })
+    } finally {
+      child.kill()
+    }
   }, 60000)
 })

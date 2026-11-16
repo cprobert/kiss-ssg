@@ -531,10 +531,9 @@ describe('kiss-ssg check', () => {
     expect(help.stdout).toContain('aikb [script]')
     expect(help.stdout).toContain('build [script]')
 
-    // `dev` is unknown until the command that runs it exists.
-    const wrong = check(repoRoot, ['dev', 'site.js'])
+    const wrong = check(repoRoot, ['serve', 'site.js'])
     expect(wrong.status).toBe(1)
-    expect(wrong.stderr).toContain('unknown command: dev')
+    expect(wrong.stderr).toContain('unknown command: serve')
   })
 })
 

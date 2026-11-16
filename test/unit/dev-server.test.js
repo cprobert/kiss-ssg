@@ -26,7 +26,7 @@ vi.mock('livereload', async (importOriginal) => {
   }
 })
 
-import { startDevServer } from '../../lib/dev-server.js'
+import { linkDevServer, startDevServer } from '../../lib/dev-server.js'
 import { silentLogger } from '../../lib/logger.js'
 import { makeSite, waitFor } from '../helpers/site.js'
 
@@ -217,5 +217,66 @@ describe('startDevServer with a real livereload server', () => {
     expect(logger.lines.some((l) => l.includes('http://127.0.0.1:'))).toBe(true)
     const res = await fetch(`http://127.0.0.1:${port}/definitely-missing.html`)
     expect(res.status).toBe(404)
+  })
+})
+
+describe('linkDevServer', () => {
+  const serve = {
+    root: '/site/public',
+    port: 3001,
+    host: '127.0.0.1',
+    livereloadPort: 35729,
+  }
+  const channel = () => {
+    const sent = []
+    const listeners = new Set()
+    return {
+      sent,
+      listeners,
+      send: (message) => sent.push(message),
+      onMessage: (listener) => {
+        listeners.add(listener)
+        return () => listeners.delete(listener)
+      },
+      hear: (message) => [...listeners].forEach((l) => l(message)),
+    }
+  }
+
+  it('asks for the servers, and is ready on the answer', async () => {
+    const c = channel()
+    const handle = linkDevServer(serve, c)
+    expect(c.sent).toEqual([{ serve }])
+    c.hear({ serving: true })
+    await expect(handle.ready).resolves.toBeUndefined()
+    expect(c.listeners.size).toBe(0)
+  })
+
+  it('rejects ready with the command’s message when it could not bind', async () => {
+    const c = channel()
+    const handle = linkDevServer(serve, c)
+    c.hear({ serveFailed: 'Dev server could not bind 127.0.0.1:3001' })
+    await expect(handle.ready).rejects.toThrow('could not bind 127.0.0.1:3001')
+  })
+
+  it('takes only the answer for its own address when the command names one', async () => {
+    const c = channel()
+    const handle = linkDevServer(serve, c)
+    c.hear({ serving: true, host: '127.0.0.1', port: 3002 })
+    let settled = false
+    handle.ready.then(() => (settled = true))
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(settled).toBe(false)
+    c.hear({ serving: true, host: '127.0.0.1', port: 3001 })
+    await expect(handle.ready).resolves.toBeUndefined()
+  })
+
+  it('refresh sends a reload, and close resolves at once and sends nothing', async () => {
+    const c = channel()
+    const handle = linkDevServer(serve, c)
+    handle.refresh('/css/site.css')
+    expect(c.sent.at(-1)).toEqual({ reload: '/css/site.css' })
+    const before = c.sent.length
+    await expect(handle.close()).resolves.toBeUndefined()
+    expect(c.sent).toHaveLength(before)
   })
 })
