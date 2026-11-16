@@ -64,7 +64,7 @@ const commandLines = (pids) => {
           ],
           { encoding: 'utf8' },
         )
-      : spawnSync('ps', ['-o', 'pid=,args=', '-p', pids.join(',')], {
+      : spawnSync('ps', ['-ww', '-o', 'pid=,args=', '-p', pids.join(',')], {
           encoding: 'utf8',
         })
   // An answer that could not be read must not read as "nothing stray". (`ps`
@@ -82,12 +82,22 @@ const commandLines = (pids) => {
 }
 
 // A command line is this case's when it names the case's site folder (the
-// script runs from it) or its tag (the watch tool is given it). Other test
+// script runs from it) or its tag (the watch tool is given it). A live process
+// whose command line comes back empty reads as not ours: the query as a whole
+// fails loudly, but one blank answer in it cannot be told from a reused pid. Other test
 // files start a `router.js` and a watch tool too, in parallel workers, so the
 // file names alone are not an identity.
 const isOurs = (line) =>
   line.includes(tag) ||
   line.replace(/\\/g, '/').includes(path.basename(site.root))
+
+// Whether a process this case started has ended. A pid that still answers
+// `kill(pid, 0)` is gone when its command line is no longer the case's: a
+// reused pid runs something else, and a dead process waiting to be reaped (a
+// container whose pid 1 reaps slowly) shows as `[node] <defunct>`, with no
+// command line of its own. The command line is read only while the pid
+// answers, so a tight poll stays cheap once the process has gone.
+const gone = (pid) => !alive(pid) || !isOurs(commandLines([pid]).get(pid) ?? '')
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -334,7 +344,7 @@ describe('kiss-ssg dev, end to end', () => {
 
     child.disconnect()
 
-    await waitFor(() => !alive(child.pid) && !alive(watcher), {
+    await waitFor(() => gone(child.pid) && gone(watcher), {
       timeout: 30000,
     })
   }, 90000)
@@ -374,7 +384,7 @@ describe('kiss-ssg dev, end to end', () => {
     // child's own closes, and its pipeline watch process is left behind, as it
     // is when `node router.js` is killed. Recorded in AIKB/rebuild.md; ended
     // here so the case leaves nothing.
-    await waitFor(() => !alive(child), { timeout: 30000 })
+    await waitFor(() => gone(child), { timeout: 30000 })
     try {
       process.kill(watcher, 'SIGKILL')
     } catch {
@@ -422,7 +432,7 @@ describe('kiss-ssg dev, end to end', () => {
     let oldGoneAt = 0
     await waitFor(
       () => {
-        if (!alive(first)) oldGoneAt = Date.now()
+        if (gone(first)) oldGoneAt = Date.now()
         return oldGoneAt > 0
       },
       { timeout: 30000, interval: 5 },
@@ -440,7 +450,7 @@ describe('kiss-ssg dev, end to end', () => {
 
     const [, second] = await pidsIn(site, 'pids.txt')
     expect(second).not.toBe(first)
-    expect(alive(first)).toBe(false)
+    expect(gone(first)).toBe(true)
     // The loop must have been asking throughout: requests between the edit and
     // the reload, and some after the old child had gone, before the new one
     // had reloaded the browser.
@@ -557,7 +567,7 @@ describe('kiss-ssg dev, end to end', () => {
     expect(lines.join('\n')).toContain('router.js exited (code 3)')
     const [watcher] = await pidsIn(site, 'watch-pids.txt')
     expect(watcher).toBeDefined()
-    await waitFor(() => !alive(watcher), { timeout: 10000 })
+    await waitFor(() => gone(watcher), { timeout: 10000 })
     // What the command was serving is still served.
     expect((await peek(ports2.port)).text).toBe('v1')
   }, 90000)
@@ -582,7 +592,7 @@ describe('kiss-ssg dev, end to end', () => {
       { timeout: 30000 },
     )
 
-    await waitFor(() => !alive(first), { timeout: 5000 })
+    await waitFor(() => gone(first), { timeout: 5000 })
   }, 90000)
 
   it('after a stop no child and no pipeline watch process is alive, and the ports are free', async () => {
@@ -608,8 +618,8 @@ describe('kiss-ssg dev, end to end', () => {
     await session.stop()
     session = null
 
-    expect(alive(child)).toBe(false)
-    expect(alive(watcher)).toBe(false)
+    expect(gone(child)).toBe(true)
+    expect(gone(watcher)).toBe(true)
     expect(await canBind(ports2.port)).toBe(true)
     expect(await canBind(ports2.livereloadPort)).toBe(true)
     // The graceful path ended it: well inside the five seconds before a kill.
