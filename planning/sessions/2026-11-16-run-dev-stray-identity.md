@@ -3,7 +3,7 @@ branch: fix/run-dev-stray-identity
 base: main
 status: open
 opened: 2026-11-16
-scope: test/integration/run-dev.test.js, test/integration/atomic-build.test.js, planning/**
+scope: test/integration/run-dev.test.js, test/integration/atomic-build.test.js, AIKB/testing.md, planning/**
 ---
 
 # Session — 2026-11-16: run-dev's stray check names what it found
