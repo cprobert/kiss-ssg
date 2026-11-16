@@ -63,6 +63,36 @@ scope: lib/check.js, test/unit/check.test.js, test/integration/**, AIKB/**, GUID
      criteria status + evidence + the continue/adjust/amend/close decision.
      Append-only — the Intent above stays immutable; criteria are ticked only at close. -->
 
+- **2026-11-16** — Slices in: the ritual (`6b5209d`), the engine line (`8b31ce3`), the docs (`166f5c0`), budgets (`c4ad2ab`) and the GUIDE corrections (`eb8e6e9`). 0 commits behind `origin/main`; `scope-check` exit 0; `npm test` exit 0 (5271 passed, 10 skipped).
+  - **Criterion 1 (egN line): met.**
+    - Measured: `npm run eg3` prints `kiss-ssg 2.18.0 from ../.. (this package itself)`, and the installed clean-room site prints `kiss-ssg 2.17.1 from node_modules/kiss-ssg`.
+    - Red-first: `- red-first: test/unit/check.test.js failed at main (2456b5e), 2026-11-16`.
+    - `ownEngine` ignores a self answer (tested). The build gate with a self answer is exercised by `examples.test.js`, which builds every example through `bin/kiss-ssg.js build`.
+  - **Criterion 2 (the four guesses): met.** Probes in a scratch site; the GUIDE lines are in `166f5c0`.
+    - The alias's leading `/` is optional.
+    - The listing page shares the file, and `slug=` takes the controller's slug.
+    - `--summary` never changes the exit code.
+    - The fifth guess, `{{active}}`, was already answered (GUIDE, and example 4's header).
+  - **Criterion 3 (sweep leftovers): met.**
+    - GUIDE leads with the bare await.
+    - `llms.txt` names `kiss-ssg dev` (15995→15994).
+    - The AIKB claims: `aikb.md` and `build-report.md` were fixed; `run-state.md` now counts 55; `model-resolver.md:26` is a past incident; `kiss.md:103` is accurate.
+    - `images-sweep.md` lists every import.
+  - **Criterion 5 (the ritual): met.** `/branch-pulse` Step 6 lists the open items, and `/branch-close` Step 5c blocks the close on them. `skill-code-blocks.test.js` passes.
+  - **Criterion 6 (clean room): met on `c4ad2ab`.** Run through `arms.mjs` on a branch tarball, re-checked by Claude:
+    - `check` exits 0 with 8 pages and 0 failed, the router holds 0 lines of failure handling, and `_redirects` has `/menu /bakes/ 301`.
+    - None of the four guesses recurs, and the nav marks the current page.
+    - Its one new guess, "what to call the listing", is answered by GUIDE.md:740 and now also in the `.pages()` paragraph (`eb8e6e9`).
+  - **Criterion 4 (review of `fe87d92..2456b5e`): not yet.** It is due at the close, as agreed.
+  - **Criterion 7 (release):** no bump, and nothing a site sees changed, so the 2.18.0 CHANGELOG entry stays as it is.
+  - **Eyeball: looked, by the advisor at the operator's request** ("Can you ask the advisor? I'm on my mobile."). The advisor found a false claim, made twice, that `kiss-ssg dev` sets the exit code, and named three claims to probe. Claude measured all four: `dev` prints and keeps serving, the listing needs no `path` or `slug`, the `Sour Dough` record had to be named, and an `ok` line can come with exit 1. All four were fixed in `eb8e6e9`. The advisor's read is not confirmation; the probes are.
+  - **Offer:** `describeEngine` gives the self-reference priority over `node_modules` (Node's documented order, not measured with both present); operator: keep.
+  - **Open items:**
+    - (1) The Codex reviews of this branch and of `fe87d92..2456b5e`: **done here**, at the close.
+    - (2) The clean room ran on `c4ad2ab`, before `eb8e6e9` changed sections it read: **done here**, re-run on the final tarball before the close.
+    - #90's convention half and the fleet migration: **out**, for the freeze and the release.
+  - Decision: **continue**, to the clean-room re-run, then `/branch-close` when the operator asks.
+
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
