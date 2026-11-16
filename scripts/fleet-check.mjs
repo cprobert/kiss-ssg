@@ -6,6 +6,7 @@
 //
 //   node scripts/fleet-check.mjs <site folder> --base <ref> [--branch <ref>]
 //                                [--out <folder>] [--entry "<script> [args]"]
+//                                [--via <node|command>]
 //
 // What it does, in order:
 //   1. Copies the site into <out>/site: `git clone --local` when the site is a
@@ -18,10 +19,14 @@
 //      node_modules/kiss-ssg, installs the tarball (`npm install --no-save`),
 //      runs `kiss-ssg check <entry>` from the installed package and keeps the
 //      reports it prints, then runs the plain build and keeps a copy of each
-//      build folder the reports name. Two builds taken together: a report kept
+//      build folder the reports name (the branch's build runs as
+//      `kiss-ssg build <entry>` under `--via command`; the base's always runs
+//      as `node <entry>`, because the base may have no `build`). Two builds
+//      taken together: a report kept
 //      from earlier is not a baseline (the same tarball gave different page
 //      hashes hours apart on 2026-11-06).
-//   4. Compares the reports (`diffReports` from lib/check.js, plus the page
+//   4. Compares the build exit codes of the two sides, the reports
+//      (`diffReports` from lib/check.js, plus the page
 //      hashes one by one and each report's summary counts) and the build
 //      folders byte for byte, then again with each engine's version string
 //      replaced by `<version>`.
@@ -46,7 +51,7 @@ import {
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
-export const USAGE = `Usage: node scripts/fleet-check.mjs <site folder> --base <ref> [--branch <ref>] [--out <folder>] [--entry "<script> [args]"]
+export const USAGE = `Usage: node scripts/fleet-check.mjs <site folder> --base <ref> [--branch <ref>] [--out <folder>] [--entry "<script> [args]"] [--via <node|command>]
 
   <site folder>  a kiss site; it is copied, never written to
   --base <ref>   the ref of this repository to compare against (e.g. main)
@@ -55,8 +60,12 @@ export const USAGE = `Usage: node scripts/fleet-check.mjs <site folder> --base <
                  folder in the OS temp); must be empty or not exist
   --entry <s>    the site's build script, when package.json's build script is
                  not a bare \`node <script>\`
+  --via <how>    how the branch's plain build runs: \`node\` (default, node
+                 <script>) or \`command\` (kiss-ssg build <script>); the base
+                 always runs through node
 
-Exit 0: identical. Exit 1: something differs. Exit 2: the check could not run.`
+Exit 0: identical. Exit 1: something differs, the two builds' exit codes
+included. Exit 2: the check could not run.`
 
 /**
  * @typedef {Object} FleetArgs
@@ -65,6 +74,7 @@ Exit 0: identical. Exit 1: something differs. Exit 2: the check could not run.`
  * @property {string} branch
  * @property {string|null} out
  * @property {string|null} entry
+ * @property {string} via `node` or `command`
  * @property {boolean} help
  * @property {string|null} error
  */
@@ -74,7 +84,10 @@ const VALUED = {
   '--branch': 'branch',
   '--out': 'out',
   '--entry': 'entry',
+  '--via': 'via',
 }
+
+const VIAS = ['node', 'command']
 
 /**
  * @param {string[]} argv `process.argv.slice(2)`
@@ -88,6 +101,7 @@ export function parseArgs(argv = []) {
     branch: 'HEAD',
     out: null,
     entry: null,
+    via: 'node',
     help: false,
     error: null,
   }
@@ -118,7 +132,22 @@ export function parseArgs(argv = []) {
   if (parsed.help) return parsed
   if (!parsed.site) return fail('name the site folder')
   if (!parsed.base) return fail('--base <ref> is required')
+  if (!VIAS.includes(parsed.via))
+    return fail(`--via is node or command, not ${parsed.via}`)
   return parsed
+}
+
+/**
+ * The arguments to `node` for a side's plain build: the script itself, or the
+ * installed command running it.
+ *
+ * @param {string} via `node` or `command`
+ * @param {string} bin the installed kiss-ssg's bin, relative to the site
+ * @param {string[]} entry `[script, ...args]`
+ * @returns {string[]}
+ */
+export function buildArgs(via, bin, entry) {
+  return via === 'command' ? [bin, 'build', ...entry] : entry
 }
 
 /**
@@ -319,14 +348,18 @@ export function compareFolders(filesA, filesB, versionA, versionB) {
 }
 
 /**
- * The exit code: 1 when either comparison found a difference, else 0.
+ * The exit code: 1 when either comparison found a difference, or when the two
+ * sides' plain builds exited differently; else 0.
  *
  * @param {{ differs: boolean }} reports
  * @param {{ differs: boolean }} folders
+ * @param {{ base: { status: number|null }, branch: { status: number|null } }|null} [builds]
  * @returns {0|1}
  */
-export function exitCodeFor(reports, folders) {
-  return reports.differs || folders.differs ? 1 : 0
+export function exitCodeFor(reports, folders, builds = null) {
+  const statusDiffers =
+    builds !== null && builds.base.status !== builds.branch.status
+  return reports.differs || folders.differs || statusDiffers ? 1 : 0
 }
 
 /**
@@ -335,14 +368,25 @@ export function exitCodeFor(reports, folders) {
  * @param {{ site: string, base: { ref: string, sha: string, version: string },
  *   branch: { ref: string, sha: string, version: string },
  *   reports: ReturnType<typeof compareReports>,
- *   folders: ReturnType<typeof compareFolders> }} input
+ *   folders: ReturnType<typeof compareFolders>,
+ *   builds?: { base: { via: string, status: number|null }, branch: { via: string, status: number|null } } }} input
  * @returns {string}
  */
-export function summaryLines({ site, base, branch, reports, folders }) {
+export function summaryLines({ site, base, branch, reports, folders, builds }) {
   const h = reports.hashes
-  const verdict = exitCodeFor(reports, folders) === 0 ? 'identical' : 'DIFFERS'
+  const verdict =
+    exitCodeFor(reports, folders, builds) === 0 ? 'identical' : 'DIFFERS'
+  const buildLine = builds
+    ? [
+        `- Builds: base by ${builds.base.via} exit ${builds.base.status}, branch by ${builds.branch.via} exit ${builds.branch.status}` +
+          (builds.base.status === builds.branch.status
+            ? ', equal.'
+            : ', DIFFER.'),
+      ]
+    : []
   return [
     `Fleet check: ${site}, ${base.ref} (${base.sha.slice(0, 7)}, ${base.version}) against ${branch.ref} (${branch.sha.slice(0, 7)}, ${branch.version}): ${verdict}.`,
+    ...buildLine,
     `- Reports: ${reports.baseLines.length} on base, ${reports.branchLines.length} on branch; ` +
       `${reports.linesDiffer ? 'summary counts differ' : 'summary counts equal'}; ` +
       `${reports.diffs.every(diffIsEmpty) ? 'diffReports moved nothing' : 'diffReports moved something'}.`,
@@ -450,7 +494,7 @@ function walk(root, dir = root, out = new Map()) {
 
 // One engine, end to end in the copy: install, check, plain build, keep the
 // build folders. Logs go to files in <out>, so stdout stays the comparison.
-function buildWith(engine, label, siteDir, entry, out) {
+function buildWith(engine, label, siteDir, entry, out, via = 'node') {
   const log = (name, r) =>
     fs.writeFileSync(
       path.join(out, `${label}-${name}.log`),
@@ -511,7 +555,7 @@ function buildWith(engine, label, siteDir, entry, out) {
       )
   for (const folder of folders)
     fs.rmSync(path.resolve(siteDir, folder), { recursive: true, force: true })
-  const build = run(process.execPath, entry, {
+  const build = run(process.execPath, buildArgs(via, bin, entry), {
     cwd: siteDir,
     env,
     timeout: 600000,
@@ -573,15 +617,27 @@ function main(argv) {
     `fleet-check: packed ${base.ref} ${base.version} and ${branch.ref} ${branch.version}; building ${entry.join(' ')}`,
   )
   const a = buildWith(base, 'base', siteDir, entry, out)
-  const b = buildWith(branch, 'branch', siteDir, entry, out)
+  const b = buildWith(branch, 'branch', siteDir, entry, out, args.via)
+  const builds = {
+    base: { via: 'node', status: a.buildStatus },
+    branch: { via: args.via, status: b.buildStatus },
+  }
 
   const reports = compareReports(a.reports, b.reports)
   const folders = compareFolders(a.files, b.files, base.version, branch.version)
 
-  console.log(`base   check exit ${a.checkStatus}, build exit ${a.buildStatus}`)
+  console.log(
+    `base   check exit ${a.checkStatus}, build (${builds.base.via}) exit ${a.buildStatus}`,
+  )
   for (const line of reports.baseLines) console.log(`base   ${line}`)
-  console.log(`branch check exit ${b.checkStatus}, build exit ${b.buildStatus}`)
+  console.log(
+    `branch check exit ${b.checkStatus}, build (${builds.branch.via}) exit ${b.buildStatus}`,
+  )
   for (const line of reports.branchLines) console.log(`branch ${line}`)
+  if (a.buildStatus !== b.buildStatus)
+    console.log(
+      `\nbuild exit codes differ: base ${a.buildStatus}, branch ${b.buildStatus}`,
+    )
   console.log('\n--- diffReports (base -> branch)')
   for (const text of reports.formatted) console.log(text)
   for (const page of reports.hashes.changed)
@@ -598,9 +654,9 @@ function main(argv) {
     console.log(`  branch: ${JSON.stringify(d.b)}`)
   }
   console.log(
-    `\n${summaryLines({ site, base, branch, reports, folders })}\n\nKept in ${out}`,
+    `\n${summaryLines({ site, base, branch, reports, folders, builds })}\n\nKept in ${out}`,
   )
-  return exitCodeFor(reports, folders)
+  return exitCodeFor(reports, folders, builds)
 }
 
 if (isMain(import.meta.filename)) {

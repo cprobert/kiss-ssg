@@ -43,7 +43,7 @@ Read the build script — `router.js` on a site that follows the convention in `
 | Prose kept in a `.md` partial                                                       | that partial; it is a template first, so its links are `{{link "id"}}`             |
 | A table or card kept as its own file (`.csv`, any extension in `config.transforms`) | that file, never the HTML it becomes; the transform in the build script renders it |
 
-If the site runs a dev server (`dev: true`, started via `.watch()`), edit and watch it reload rather than rebuilding by hand: a page-view edit re-renders just that page; a partial or layout edit re-renders every page that rendered it; anything else — an edited model, a controller, a new or deleted page file — triggers a whole-site rebuild that replays `.page()`/`.pages()`/`.scan()` from scratch, so the change actually takes effect. See `node_modules/kiss-ssg/llms.txt` `.watch()` for the exact scoping rules and `node_modules/kiss-ssg/AIKB/watcher.md` / `AIKB/dependency-graph.md` for how the scoping is decided.
+If the site runs a dev server (`npx kiss-ssg dev`, or `npm run dev`), edit and watch it reload rather than rebuilding by hand: a page-view edit re-renders just that page; a partial or layout edit re-renders every page that rendered it; anything else — an edited model, a controller, a new or deleted page file — triggers a whole-site rebuild that replays `.page()`/`.pages()`/`.scan()` from scratch, so the change actually takes effect. See `node_modules/kiss-ssg/llms.txt` `.watch()` for the exact scoping rules and `node_modules/kiss-ssg/AIKB/watcher.md` / `AIKB/dependency-graph.md` for how the scoping is decided.
 
 ### 4. Don't let a page collide or silently disappear
 

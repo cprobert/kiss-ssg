@@ -8,6 +8,7 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { describe, it, expect } from 'vitest'
 import {
+  buildArgs,
   compareFolders,
   compareHashes,
   compareReports,
@@ -46,9 +47,23 @@ describe('parseArgs', () => {
       branch: 'HEAD',
       out: null,
       entry: null,
+      via: 'node',
       help: false,
       error: null,
     })
+  })
+
+  it('reads --via, and builds through node unless told otherwise', () => {
+    expect(parseArgs(['s', '--base', 'main', '--via', 'command']).via).toBe(
+      'command',
+    )
+    expect(parseArgs(['s', '--base', 'main', '--via=node']).via).toBe('node')
+  })
+
+  it('refuses a --via that is neither node nor command', () => {
+    expect(parseArgs(['s', '--base', 'main', '--via', 'npm']).error).toBe(
+      '--via is node or command, not npm',
+    )
   })
 
   it('takes --flag value and --flag=value alike', () => {
@@ -355,6 +370,67 @@ describe('exitCodeFor', () => {
     expect(exitCodeFor({ differs: false }, { differs: false })).toBe(0)
     expect(exitCodeFor({ differs: true }, { differs: false })).toBe(1)
     expect(exitCodeFor({ differs: false }, { differs: true })).toBe(1)
+  })
+})
+
+describe('buildArgs', () => {
+  const bin = 'node_modules/kiss-ssg/bin/kiss-ssg.js'
+
+  it('runs the script itself under node', () => {
+    expect(buildArgs('node', bin, ['router.js', 'production'])).toEqual([
+      'router.js',
+      'production',
+    ])
+  })
+
+  it('runs the installed command, with the script and its arguments, under command', () => {
+    expect(buildArgs('command', bin, ['router.js', 'production'])).toEqual([
+      bin,
+      'build',
+      'router.js',
+      'production',
+    ])
+  })
+})
+
+describe('exitCodeFor, build exit codes', () => {
+  const same = { differs: false }
+  const built = (base, branch) => ({
+    base: { status: base },
+    branch: { status: branch },
+  })
+
+  it('fails when the two builds exited differently, though nothing else differs', () => {
+    expect(exitCodeFor(same, same, built(0, 1))).toBe(1)
+    expect(exitCodeFor(same, same, built(1, 0))).toBe(1)
+    expect(exitCodeFor(same, same, built(0, null))).toBe(1)
+  })
+
+  it('passes when both exited the same way, success or failure', () => {
+    expect(exitCodeFor(same, same, built(0, 0))).toBe(0)
+    expect(exitCodeFor(same, same, built(1, 1))).toBe(0)
+  })
+
+  it('says both codes and how each side was built in the summary', () => {
+    const pages = [['docs/index.html', 'h']]
+    const input = {
+      site: 's',
+      base: { ref: 'main', sha: 'abcdef0123', version: '2.17.0' },
+      branch: { ref: 'HEAD', sha: '1234567890', version: '2.18.0' },
+      reports: compareReports([report(pages)], [report(pages)]),
+      folders: compareFolders(files([]), files([]), '2.17.0', '2.18.0'),
+    }
+    const text = summaryLines({
+      ...input,
+      builds: {
+        base: { via: 'node', status: 0 },
+        branch: { via: 'command', status: 1 },
+      },
+    })
+    expect(text).toContain('DIFFERS.')
+    expect(text).toContain(
+      '- Builds: base by node exit 0, branch by command exit 1, DIFFER.',
+    )
   })
 })
 

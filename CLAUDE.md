@@ -131,7 +131,7 @@ npx kiss-ssg images <script>               # fill and prune the committed image 
 node scripts/base-branch.mjs               # the integration branch this work merges into
 node scripts/scope-check.mjs               # changed files outside the session file's scope:; exit 1 if any
 node scripts/red-first.mjs <test file>     # run a new test against the base; exit 0 = it failed there (wanted)
-node scripts/fleet-check.mjs <site> --base <ref>   # build a real site from the base and the branch; exit 1 if they differ
+node scripts/fleet-check.mjs <site> --base <ref> [--via command]   # build a real site from the base and the branch (the branch through `kiss-ssg build` under `--via command`); exit 1 if they or their build exit codes differ
 node scripts/budgets.mjs [--record|--check] [--bench <file>]   # the roadmap's budgets against planning/budgets.json
 node scripts/arms.mjs setup|run|summarise  # measure a skill: one headless arm on a site at a commit
 node scripts/sync-plugin-versions.mjs      # carry package.json's version into every plugin manifest (npm version runs it)
