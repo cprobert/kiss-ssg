@@ -331,6 +331,8 @@ literal again and run `npm run typecheck`.
 
 Both use PurgeCSS options, not patches. **Re-check:** after a PurgeCSS upgrade, comment out `standard: [PSEUDO_PART]` and run `npx vitest run test/unit/css-purge.test.js -t "every element"`. If it stays green, PurgeCSS keeps these itself and the guard can go. The extractor is kiss's for good: Tailwind's own class syntax is not PurgeCSS's to follow.
 
+**Re-checked 2026-11-16 on `purgecss` 9.1.0: part 1 is fixed upstream.** Without the guard, the re-check passes on 9.1.0 (5 of 5). On 8.0.0 it fails 3 of 5, on `:focus-visible` and `:-moz-focusring:where(…)`. With the guard in place, `purgeCss` gives identical CSS on both versions for sixteen selector shapes: root-level `:where`, `:is` and `:not`, `:root`, `:host`, a bare `:focus-visible`, nested `&:hover`, `@media` and pseudo-elements. The probe was the shipped function, once under each version. The guard stays for now. It is harmless on 9, and removing it is a `lib/` change of its own.
+
 ### turndown-plugin-gfm is unmaintained
 
 **Observed:** `turndown-plugin-gfm` 1.0.2, last published 2022 (npm
@@ -553,6 +555,30 @@ first launch's place.
 A socket closed before the headers gave `other side closed` 200 times of 200, whether the server called `socket.destroy()` or `socket.end()`, and so did a socket closed mid-body. The test's `/drop` row, when it used `destroy()`, was reported to give `ECONNRESET` instead (the plan of 2026-11-07, item 8); it was not reproduced here, 20 runs of the file of 20 green before the change. A `destroy()` can reach the client as a reset, so the row now uses `end()`, a FIN, which has no reset in its path (inferred, not reproduced).
 
 **Re-check:** on a new Node, run `npx vitest run test/unit/fetch-policy.test.js`. The block "a failure's message is written by kiss" drives each shape it can through the real `fetch` and asserts the exact message, so a reworded cause turns its row red and says what the new text is; the self-signed row is a stub shaped as measured, so re-measure it with a local `https` server and a throwaway certificate (`openssl req -x509 -newkey rsa:2048 -nodes -subj /CN=127.0.0.1`). For the `/drop` row, run the file twenty times in a loop and count the runs whose drop row reads `ECONNRESET`. A message ending `→ an error kiss cannot describe (TypeError)` in a real build's log is the same signal: measure that failure's `error.cause` and add its message to the list if it is a constant.
+
+### TypeScript 7 drops the description of every `@typedef` from the declarations it emits
+
+**Observed:** `typescript` 7.0.2 (2026-11-16, Dependabot #88), against the 5.9.3 that `npm run types` uses.
+
+**Effect:** `types/` ships, and an editor or an agent in a site reads it on hover. Under 7.0.2, all 114 type aliases whose JSDoc has a description lose it, with 0 kept. Every alias is still emitted. The emit loses 114 JSDoc blocks in all, the same 114, so property comments survive: `ZipEntry` keeps its two fields' docs and loses "One file of a zip". Other differences found so far:
+
+- **`Kiss._assetManifest` is emitted without `private`.** Its bare `/** @private */` is not honoured. The other 181 member _names_ match; their signatures were not compared.
+- **115 lines differ after normalising order, quotes, grouped imports and export clauses** (removed plus added, in 26 files). They are unclassified. The shapes sampled: a `function` emitted as a `const` arrow, `const X: "lit"` as `const X = "lit"`, the members of a union printed in another order (membership not compared), and the logger's `namespace` as an object type.
+- **Breaks:**
+  - `tsconfig.types.json` needs an explicit `rootDir` (TS5011).
+  - `npm run typecheck` fails four `TS2810`s (`new Promise()` with no JSDoc hint) in `lib/dev-server.js` and `lib/pipeline.js`.
+  - `test/unit/types.test.js` asserts on a diagnostic's wording that changed (CI on #88).
+
+  The suite has not been run on 7.0.2 with `rootDir` set, so there may be more.
+
+**What kiss does:** takes TypeScript 6.0.3 (2026-11-16), not 7. 6.0.3 asks for the same `rootDir` (TS5011), now set in `tsconfig.types.json`. It keeps every typedef description and `private _assetManifest`, passes `npm run typecheck` with no hints, and `npm run types` leaves `types/` byte-identical to 5.9.3's. Dependabot's 7.0.2 PR (#88) was closed with a pointer here. Moving to 7 waits for the re-check below to give 1.
+
+**Re-check:** emit with the new TypeScript into a scratch folder, and count one typedef's description. Both 5.9.3 and 7.0.2 ran this command (2026-11-16): 5.9.3 gives 1, 7.0.2 gives 0.
+
+```bash
+npx -y -p typescript@<version> tsc -p tsconfig.types.json --rootDir lib --outDir <scratch folder>
+grep -c "One file of a zip" <scratch folder>/zip.d.ts
+```
 
 ## Supported alternatives not used
 

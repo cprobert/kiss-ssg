@@ -4,6 +4,7 @@
     "checkJs": false,
     "declaration": true,
     "emitDeclarationOnly": true,
+    "rootDir": "lib",
     "outDir": "types",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",

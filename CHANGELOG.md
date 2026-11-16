@@ -3,6 +3,21 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.18.1 — 2026-11-16
+
+### Nothing for a site to change
+
+Dependency updates. **The one your site receives is PurgeCSS 9** (`purgecss` `^9.1.0`, was
+`^8.0.0`). It runs when `config.assets.purge` names a stylesheet, and in `kiss-ssg css`. Its own
+breaking change, Node 22.12 or later, is below kiss's floor of 22.23.4. Two sites that purge built
+byte-identical output on both versions.
+
+- **What PurgeCSS 9 fixes.** It now keeps a selector made only of pseudo-classes, such as
+  `:focus-visible { outline: … }`, which 8.0.0 removed. kiss already kept those itself, and still
+  does: sixteen selector shapes purge to the same CSS on both versions.
+- **The other updates are inside ranges kiss already declared** (glob 14.0.6, sass 1.108.2,
+  turndown 7.2.5). Your site's own lockfile decides which of those it runs.
+
 ## 2.18.0 — 2026-11-16
 
 `kiss-ssg build` and `kiss-ssg dev` now run your build script for you. The command tells the

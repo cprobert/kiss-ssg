@@ -1,6 +1,6 @@
 {
   "name": "kiss-ssg",
-  "version": "2.18.0",
+  "version": "2.18.1",
   "description": "A small static site generator for Node: Handlebars views, JSON models, Markdown, Sass, responsive images, sitemap and checked internal links. Built to be driven by an AI agent.",
   "main": "lib/kiss.js",
   "types": "./types/kiss.d.ts",
@@ -91,7 +91,7 @@
     "livereload": "^0.10.3",
     "markdown-it": "^15.0.3",
     "postcss": "^8.5.28",
-    "purgecss": "^8.0.0",
+    "purgecss": "^9.1.0",
     "sass": "^1.108.0",
     "serve-static": "^2.2.1",
     "sharp": "^0.35.5",
@@ -116,7 +116,7 @@
     "globals": "^17.14.0",
     "playwright-core": "^1.65.0",
     "prettier": "^3.9.10",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "vitest": "^5.1.0"
   },
   "keywords": [
