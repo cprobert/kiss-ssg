@@ -571,7 +571,7 @@ A socket closed before the headers gave `other side closed` 200 times of 200, wh
 
   The suite has not been run on 7.0.2 with `rootDir` set, so there may be more.
 
-**What kiss does:** stays on TypeScript 5.9.
+**What kiss does:** takes TypeScript 6.0.3 (2026-11-16), not 7. 6.0.3 asks for the same `rootDir` (TS5011), now set in `tsconfig.types.json`. It keeps every typedef description and `private _assetManifest`, passes `npm run typecheck` with no hints, and `npm run types` leaves `types/` byte-identical to 5.9.3's. Dependabot's 7.0.2 PR (#88) was closed with a pointer here. Moving to 7 waits for the re-check below to give 1.
 
 **Re-check:** emit with the new TypeScript into a scratch folder, and count one typedef's description. Both 5.9.3 and 7.0.2 ran this command (2026-11-16): 5.9.3 gives 1, 7.0.2 gives 0.
 
