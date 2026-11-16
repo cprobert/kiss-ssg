@@ -6,14 +6,15 @@ Newest first. `/branch-close` adds an entry alongside each version bump.
 ## 2.18.0 — 2026-11-16
 
 `kiss-ssg build` and `kiss-ssg dev` now run your build script for you. The command tells the
-script what it is (`Kiss.mode`), prints every failure once, and exits 1 if a build failed or
-none settled. `kiss-ssg dev` also keeps the dev server and the livereload socket up across an
-edit to the script, so the browser never loses its page. A script that awaits `complete()` and
-is run as `node router.js` works as before.
+script what it is (`Kiss.mode`) and prints every failure once. `kiss-ssg build` exits 1 if a
+build failed or none settled; `kiss-ssg dev` reports a failure and keeps serving, and keeps the
+dev server and the livereload socket up across an edit to the script, so the browser never
+loses its page. A script that awaits `complete()` and is run as `node router.js` works as
+before.
 
 - **`kiss-ssg build [script] [args…]`** runs the script (`router.js` when none is named) and
-  exits with its verdict: one line per `Kiss` instance on stderr, exit 1 if any build failed,
-  the script exited non-zero, or nothing settled.
+  exits with its verdict: one line per `Kiss` instance on stderr (and one per failure), exit 1
+  if any build failed, the script exited non-zero, or nothing settled.
 - **`kiss-ssg dev [script] [args…]`** builds, serves and watches. The command owns the HTTP and
   livereload servers and the watch on the script. An edit to the script restarts the build,
   and Ctrl-C stops everything it started.
@@ -78,8 +79,8 @@ is run as `node router.js` works as before.
     rendered, the previous file for each page that failed) and reloads nothing.
   - Output of a page the edit removed stays until the next `kiss-ssg dev` or `kiss-ssg build`.
   - Only an edit to the script restarts; a module the script imports does not.
-- **`KISS_CHECK=1` keeps working until 3.0.** `kiss-ssg check` itself now passes its request
-  without it.
+- **`KISS_CHECK=1` keeps working until 3.0.** `kiss-ssg check` now passes its request through
+  its preload, and still sets `KISS_CHECK=1` for a script that reads it.
 
 ## 2.17.1 — 2026-11-15
 
