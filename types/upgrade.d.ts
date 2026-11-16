@@ -112,6 +112,7 @@ export function ownEngine(engine: ReturnType<typeof import("./check.js").describ
     dir: string;
     linked: boolean;
     target: string | null;
+    self: boolean;
 };
 /**
  * What git said about package.json and the lockfile. "Not a repository", and

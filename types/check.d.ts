@@ -19,16 +19,6 @@ export function checkModeRequested(env?: Record<string, string | undefined>): bo
  */
 export function aikbRecordRequested(env?: Record<string, string | undefined>): boolean;
 /**
- * @typedef {Object} CheckArgs
- * @property {'check'|'aikb'|'build'|'dev'|'help'} command
- * @property {string|null} script the site's build script; `router.js` when none was named
- * @property {string[]} args everything after it, passed through to the script
- * @property {boolean} summary print `formatReport` lines instead of JSON
- * @property {boolean} subjects print `subjectLines` instead of JSON
- * @property {string|null} against an earlier report to diff this build against
- * @property {string|null} error a usage error: print it with the help and exit 1
- */
-/**
  * Which kiss-ssg the site's script will import: the nearest
  * `node_modules/kiss-ssg` walking up from `from` — the script's own folder,
  * which is where Node resolves its imports from, not the caller's cwd (Codex,
@@ -42,8 +32,12 @@ export function aikbRecordRequested(env?: Record<string, string | undefined>): b
  * against a working tree. `check` is the one command every upgrade runs.
  *
  * @param {{ cwd: string, from?: string }} where `from` defaults to `cwd`
- * @returns {{ version: string, dir: string, linked: boolean, target: string|null }|null}
- * `null` when no `node_modules/kiss-ssg` exists above `from`
+ * A script inside a package named `kiss-ssg` that has `exports` resolves that
+ * package itself, first: `self` is true, `dir` is the package's folder and
+ * `linked` is false.
+ *
+ * @returns {{ version: string, dir: string, linked: boolean, target: string|null, self: boolean }|null}
+ * `null` when neither a self-reference nor a `node_modules/kiss-ssg` exists above `from`
  */
 export function describeEngine({ cwd, from }: {
     cwd: string;
@@ -53,6 +47,7 @@ export function describeEngine({ cwd, from }: {
     dir: string;
     linked: boolean;
     target: string | null;
+    self: boolean;
 } | null;
 /**
  * Whether the engine a site resolves is a link to a working tree rather than

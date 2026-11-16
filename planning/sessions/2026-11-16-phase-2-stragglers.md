@@ -3,7 +3,7 @@ branch: chore/phase-2-stragglers
 base: main
 status: open
 opened: 2026-11-16
-scope: lib/check.js, test/unit/check.test.js, test/integration/**, AIKB/**, GUIDE.md, llms.txt, README.md, CHANGELOG.md, CLAUDE.md, plugins/kiss-ssg/**, .claude/skills/branch-pulse/SKILL.md, .claude/skills/branch-close/SKILL.md, planning/**, types/check.d.ts
+scope: lib/check.js, test/unit/check.test.js, test/integration/**, AIKB/**, GUIDE.md, llms.txt, README.md, CHANGELOG.md, CLAUDE.md, plugins/kiss-ssg/**, .claude/skills/branch-pulse/SKILL.md, .claude/skills/branch-close/SKILL.md, planning/**, types/check.d.ts, types/upgrade.d.ts
 ---
 
 # Session — 2026-11-16: Phase 2 stragglers, inside 2.18.0
@@ -55,6 +55,7 @@ scope: lib/check.js, test/unit/check.test.js, test/integration/**, AIKB/**, GUID
 ### Amendments
 
 - **2026-11-16 — opened from the operator's correction after PR #97 merged:** "We shouldn't have closed or called for a pull request where they were outstanding straggling actions. Let's address those here on a new branch but it goes in as the same version number." The operator chose all four items, the ritual fix, Codex at the close and the clean-room re-run. **Hold `/kiss-publish` until this branch merges.**
+- **2026-11-16 — the scope widens to `types/upgrade.d.ts`.** `npm run types` regenerates it because `ownEngine`'s type refers to `describeEngine`'s return, which gained `self`. The coreLines budget grows by the fix's lines (35655→35704) and is re-recorded in its own commit.
 
 ## Pulse log
 
