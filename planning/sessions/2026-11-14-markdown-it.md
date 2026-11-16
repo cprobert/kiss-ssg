@@ -3,6 +3,7 @@ branch: feat/markdown-it
 base: main
 status: closed
 opened: 2026-11-14
+consolidated: 2026-11-16
 scope: lib/**, types/**, test/**, package.json, package-lock.json, GUIDE.md, llms.txt, README.md, AIKB/**, CHANGELOG.md, CLAUDE.md, src/**, scripts/budgets.mjs, scripts/gates.mjs, scripts/markdown-links.mjs, scripts/bench.mjs, .github/pull_request_template.md, .claude-plugin/marketplace.json, planning/**, plugins/**, examples/**, .claude/skills/**
 ---
 

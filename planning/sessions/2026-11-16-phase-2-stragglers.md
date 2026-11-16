@@ -3,6 +3,7 @@ branch: chore/phase-2-stragglers
 base: main
 status: closed
 opened: 2026-11-16
+consolidated: 2026-11-16
 scope: lib/check.js, test/unit/check.test.js, test/integration/**, AIKB/**, GUIDE.md, llms.txt, README.md, CHANGELOG.md, CLAUDE.md, plugins/kiss-ssg/**, .claude/skills/branch-pulse/SKILL.md, .claude/skills/branch-close/SKILL.md, .claude/skills/secrets-scan/SKILL.md, planning/**, types/check.d.ts, types/upgrade.d.ts
 ---
 

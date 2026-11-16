@@ -3,6 +3,7 @@ branch: fix/run-dev-stray-identity
 base: main
 status: closed
 opened: 2026-11-16
+consolidated: 2026-11-16
 scope: test/integration/run-dev.test.js, test/integration/atomic-build.test.js, AIKB/testing.md, planning/**
 ---
 

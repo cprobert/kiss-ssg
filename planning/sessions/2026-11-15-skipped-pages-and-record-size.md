@@ -3,6 +3,7 @@ branch: fix/skipped-pages-and-record-size
 base: main
 status: closed
 opened: 2026-11-15
+consolidated: 2026-11-16
 scope: lib/build-report.js, lib/check.js, lib/aikb.js, lib/issue.js, lib/kiss.js, lib/kiss-page.js, lib/build-finish.js, lib/page-registry.js, AIKB/page-registry.md, bin/kiss-ssg.js, scripts/red-first.mjs, scripts/fleet-check.mjs, examples/*/AIKB/**, test/**, AIKB/build-report.md, AIKB/check.md, AIKB/aikb.md, AIKB/issue.md, AIKB/kiss.md, AIKB/kiss-page.md, AIKB/build-finish.md, AIKB/testing.md, GUIDE.md, llms.txt, README.md, types/**, CHANGELOG.md, package.json, package-lock.json, plugins/*/.claude-plugin/plugin.json, .claude-plugin/marketplace.json, planning/**
 ---
 

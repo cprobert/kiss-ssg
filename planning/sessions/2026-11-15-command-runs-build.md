@@ -3,6 +3,7 @@ branch: feat/command-runs-build
 base: main
 status: closed
 opened: 2026-11-15
+consolidated: 2026-11-16
 issue: 90
 scope: planning/**, lib/**, bin/**, test/**, types/**, examples/**, starter/**, scripts/**, AIKB/**, plugins/kiss-ssg/**, src/**, GUIDE.md, llms.txt, README.md, CHANGELOG.md, CONTRIBUTING.md, CLAUDE.md, package.json, package-lock.json, .claude/skills/secrets-scan/SKILL.md, .claude-plugin/marketplace.json, plugins/kiss-memory/.claude-plugin/plugin.json
 ---
