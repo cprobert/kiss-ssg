@@ -25,7 +25,7 @@
  * @typedef {Object} RunState
  * @property {number} v
  * @property {RunRequest|null} request
- * @property {Set<RunInstance>} live every instance, from construction until `close()`
+ * @property {Set<RunInstance>} live every instance that still has something for `close()` to do: from construction until `close()`, or until a non-dev build settles with nothing left to close (`released`), and again from `track`
  * @property {Set<RunInstance>} unsettled every non-dev instance whose build has not settled
  * @property {{ beforeExit: boolean, uncaught: boolean, channel: boolean }} armed
  */
@@ -67,6 +67,21 @@ export function register(instance: RunInstance): void;
  * @param {RunInstance} instance
  */
 export function settled(instance: RunInstance): void;
+/**
+ * An instance has nothing left for `close()` to do, so it need not stay live to
+ * be closed when the process ends: a non-dev build that settled and promoted.
+ * The caller decides, because the fields that say so are `Kiss`'s own.
+ *
+ * @param {RunInstance} instance
+ */
+export function released(instance: RunInstance): void;
+/**
+ * A released instance has something for `close()` to do again (it started
+ * watching). Never unsettled: its build already settled.
+ *
+ * @param {RunInstance} instance
+ */
+export function track(instance: RunInstance): void;
 /**
  * An instance was closed.
  *
@@ -125,7 +140,7 @@ export type RunState = {
     v: number;
     request: RunRequest | null;
     /**
-     * every instance, from construction until `close()`
+     * every instance that still has something for `close()` to do: from construction until `close()`, or until a non-dev build settles with nothing left to close (`released`), and again from `track`
      */
     live: Set<RunInstance>;
     /**

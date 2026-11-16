@@ -3,8 +3,10 @@ import {
   closed,
   currentRun,
   register,
+  released,
   runState,
   settled,
+  track,
   unsettledMessage,
 } from '../../lib/run-state.js'
 
@@ -116,6 +118,47 @@ describe('register, settled and closed', () => {
     register(one)
     closed(one)
     expect(runState().unsettled.has(one)).toBe(false)
+    expect(runState().live.has(one)).toBe(false)
+  })
+
+  it('released takes an instance out of both sets without closing it', () => {
+    let closes = 0
+    const one = fake({
+      close: async () => {
+        closes++
+      },
+    })
+    register(one)
+    released(one)
+    expect(runState().live.has(one)).toBe(false)
+    expect(runState().unsettled.has(one)).toBe(false)
+    expect(closes).toBe(0)
+  })
+
+  it('released leaves every other instance live', () => {
+    const one = fake()
+    const two = fake()
+    register(one)
+    register(two)
+    released(one)
+    expect(runState().live.has(two)).toBe(true)
+    expect(runState().unsettled.has(two)).toBe(true)
+  })
+
+  it('track puts a released instance back in live, and not in unsettled', () => {
+    const one = fake()
+    register(one)
+    settled(one)
+    released(one)
+    track(one)
+    expect(runState().live.has(one)).toBe(true)
+    expect(runState().unsettled.has(one)).toBe(false)
+  })
+
+  it('closed takes a tracked instance out again', () => {
+    const one = fake()
+    track(one)
+    closed(one)
     expect(runState().live.has(one)).toBe(false)
   })
 

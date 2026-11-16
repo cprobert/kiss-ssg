@@ -393,6 +393,11 @@ the preload, and a stop sent there would close nothing.
 finds a `v` it does not know throws from the constructor, naming both versions: two copies that
 disagree about the shape must not half-work.
 
+_Note, 2026-11-16 (measured: 20 sequential non-dev builds in one process left `live.size === 20`):
+`live` is not "every instance until `close()`" but every instance that still has something for
+`close()` to do. A non-dev build that settles with no watcher, server, staging or aside folder
+leaves it (`released`), and `watch()` puts it back (`track`)._
+
 Who arms what, so each fires once:
 
 | Listener                         | Armed by                                                    | Guard              |

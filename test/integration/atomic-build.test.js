@@ -24,6 +24,9 @@ const staging = (dir) =>
       (name) => name.includes('.kiss-staging') || name.includes('.kiss-old'),
     )
 
+// The run state's `live` set: what close() still has something to do for.
+const live = () => globalThis[Symbol.for('kiss-ssg.run')].live
+
 let site
 let kiss
 afterEach(async () => {
@@ -211,9 +214,43 @@ describe("cleanBuild: 'atomic'", () => {
     kiss.scan().generate()
     await expect(kiss.complete()).rejects.toThrow(/build failure/)
 
+    // Still live: the failed build keeps its staging path for close() to
+    // remove for good, since a later write would recreate the folder.
+    expect(live().has(kiss)).toBe(true)
+
     await kiss.close()
+    expect(live().has(kiss)).toBe(false)
     expect(staging(site.root)).toEqual([])
     expect(await site.read('public/published.html')).toBe('old')
+  })
+
+  it('a build that settles with nothing left to close leaves the live set', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'i' })
+    for (const cleanBuild of [false, 'atomic']) {
+      const one = new Kiss({
+        folders: site.folders,
+        cleanBuild,
+        logger: silentLogger,
+      })
+      expect(live().has(one)).toBe(true)
+      one.scan().generate()
+      await one.complete()
+      expect(live().has(one)).toBe(false)
+    }
+  })
+
+  it('a released instance that starts watching is live again until closed', async () => {
+    site = await makeSite({ 'src/pages/index.hbs': 'i' })
+    kiss = new Kiss({ folders: site.folders, logger: silentLogger })
+    kiss.scan().generate()
+    await kiss.complete()
+    expect(live().has(kiss)).toBe(false)
+
+    kiss.watch()
+    expect(live().has(kiss)).toBe(true)
+
+    await kiss.close()
+    expect(live().has(kiss)).toBe(false)
   })
 
   it('close() removes the staging directory of a build that never completed', async () => {

@@ -8,8 +8,10 @@ The process-wide state of a run: what the command that started this process aske
 
 - `runState()` → the shared `{ v, request, live, unsettled, armed }`, created on first touch. A `v` other than `1` throws, naming both versions: two copies that disagree about the shape must not half-work.
 - `currentRun(env = process.env)` → the `RunRequest` this process was started for: the preload's request when there is one, otherwise the same shape built from `KISS_CHECK`, `KISS_AIKB`, `KISS_REPORT`, `KISS_IMAGES` and `KISS_IMAGES_REFRESH` by the `CHECK_MODE_OFF` rule (`lib/check.js`), `mode: null` when neither says. The one place the engine reads process state to learn what it was asked to do: `lib/kiss.js`'s constructor, and `lib/build-finish.js` for the report file, the knowledge-base record and the image sweep.
-- `register(instance)` → called at the end of the `Kiss` constructor. Adds to `live`, and to `unsettled` unless `config.dev`; the first unsettled instance arms the one `beforeExit` listener, behind `armed.beforeExit`.
+- `register(instance)` → called at the end of the `Kiss` constructor. Adds to `live`, and to `unsettled` unless `config.dev`; the first unsettled instance arms the one `beforeExit` listener, behind `armed.beforeExit`. `live` is every instance that still has something for `close()` to do, because `endProcess` (`lib/run-preload.js`) is its only reader.
 - `settled(instance)` → a `complete()` finished, resolved or rejected: leaves `unsettled`.
+- `released(instance)` → the instance has nothing left for `close()`: leaves both sets without closing. `lib/kiss.js` calls it at the outermost `complete()` settle for a non-dev instance with no `_watcher`, `_devServer`, `_stagingDir` or `_oldDir`; the decision stays in `kiss.js` because those fields are its own. Without it a script that ends after `await kiss.complete()` (never `close()`) kept every instance, its pages and models, live for the life of the process. A failed atomic build keeps `_stagingDir`, so it stays live until closed.
+- `track(instance)` → re-adds a released instance to `live` (never to `unsettled`). `Kiss.watch()` calls it, since a watcher is something for `close()` to stop.
 - `closed(instance)` → `close()` was called: leaves both sets.
 - `unsettledMessage(instance)` → the message of a build the process ended without settling.
 
@@ -19,7 +21,7 @@ The process-wide state of a run: what the command that started this process aske
 
 ## Depended on by
 
-`lib/kiss.js` (`currentRun`, `register`, `settled`, `closed`), `lib/build-finish.js` (`currentRun`) and `lib/run-preload.js` (`runState`).
+`lib/kiss.js` (`currentRun`, `register`, `settled`, `released`, `track`, `closed`), `lib/build-finish.js` (`currentRun`) and `lib/run-preload.js` (`runState`).
 
 ## Non-obvious behavior
 
