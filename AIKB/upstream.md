@@ -560,19 +560,24 @@ A socket closed before the headers gave `other side closed` 200 times of 200, wh
 
 **Observed:** `typescript` 7.0.2 (2026-11-16, Dependabot #88), against the 5.9.3 that `npm run types` uses.
 
-**Effect:** `types/` ships, and an editor or an agent in a site reads it on hover. Under 7.0.2, all 114 type aliases whose JSDoc has a description lose it, with 0 kept. The aliases and their property comments are still emitted. So `KissFolders` keeps its keys' docs but loses "Where the engine reads and writes…". Three more differences come with it:
+**Effect:** `types/` ships, and an editor or an agent in a site reads it on hover. Under 7.0.2, all 114 type aliases whose JSDoc has a description lose it, with 0 kept. Every alias is still emitted. The emit loses 114 JSDoc blocks in all, the same 114, so property comments survive: `ZipEntry` keeps its two fields' docs and loses "One file of a zip". Other differences found so far:
 
-- **`Kiss._assetManifest` is emitted public.** Its bare `/** @private */` is not honoured; the other 181 member names match.
-- **115 declarations differ after normalising order, quotes, grouped imports and export clauses.** They are unclassified. The shapes sampled: a `function` emitted as a `const` arrow, `const X: "lit"` as `const X = "lit"`, union members reordered, and the logger's `namespace` as an object type.
-- **Two more breaks.** `tsconfig.types.json` needs an explicit `rootDir` (TS5011). `npm run typecheck` fails four `TS2810`s (`new Promise()` with no JSDoc hint) in `lib/dev-server.js` and `lib/pipeline.js`.
+- **`Kiss._assetManifest` is emitted without `private`.** Its bare `/** @private */` is not honoured. The other 181 member _names_ match; their signatures were not compared.
+- **115 lines differ after normalising order, quotes, grouped imports and export clauses** (removed plus added, in 26 files). They are unclassified. The shapes sampled: a `function` emitted as a `const` arrow, `const X: "lit"` as `const X = "lit"`, the members of a union printed in another order (membership not compared), and the logger's `namespace` as an object type.
+- **Breaks:**
+  - `tsconfig.types.json` needs an explicit `rootDir` (TS5011).
+  - `npm run typecheck` fails four `TS2810`s (`new Promise()` with no JSDoc hint) in `lib/dev-server.js` and `lib/pipeline.js`.
+  - `test/unit/types.test.js` asserts on a diagnostic's wording that changed (CI on #88).
 
-**What kiss does:** stays on TypeScript 5.9 until the operator decides. Dependabot #88 is left open, and nothing in `lib/`, `tsconfig.types.json` or `.github/dependabot.yml` has changed for it.
+  The suite has not been run on 7.0.2 with `rootDir` set, so there may be more.
 
-**Re-check:** on a new TypeScript, emit into a scratch folder and count one typedef's description in `config.d.ts`. 5.9.3 gives 2, the typedef and the `folders` property that repeats it. 7.0.2 gives 1, the property alone.
+**What kiss does:** stays on TypeScript 5.9.
+
+**Re-check:** emit with the new TypeScript into a scratch folder, and count one typedef's description. Both 5.9.3 and 7.0.2 ran this command (2026-11-16): 5.9.3 gives 1, 7.0.2 gives 0.
 
 ```bash
 npx -y -p typescript@<version> tsc -p tsconfig.types.json --rootDir lib --outDir <scratch folder>
-grep -c "Where the engine reads and writes. Every key" <scratch folder>/config.d.ts
+grep -c "One file of a zip" <scratch folder>/zip.d.ts
 ```
 
 ## Supported alternatives not used
