@@ -108,6 +108,43 @@ scope: package.json, package-lock.json, GUIDE.md, tsconfig*.json, scripts/emit-t
     - The `PSEUDO_PART` guard: **out**, as in turn 2.
   - **Offer: unanswered** (the operator is asleep). The decision since the last pulse: #88 was held rather than taken. Taking it ships 114 lost hover descriptions; holding it costs one Dependabot PR left open.
   - **Decision:** continue to turn 4.
+- **2026-11-16, turn 4 (fleet, changelog, 2.18.1)** — 0 commits behind `origin/main`.
+  - **Bump:** `npm version patch --no-git-tag-version` → 2.18.1, with the three plugin manifests synced (`8d79eda`). `git tag --points-at HEAD` printed nothing. `git diff main HEAD -- package.json` moves only `version` and `purgecss` (`^8.0.0` → `^9.1.0`). `git diff --quiet main HEAD -- types` exit 0.
+  - **Changelog:** `### Nothing for a site to change`. Corrected in `6829e7e` after the advisor's read:
+    - PurgeCSS also runs in `kiss-ssg css` (`lib/css-audit.js:603`, beside `lib/build-finish.js:619`).
+    - The claims are now two sites and sixteen shapes.
+    - The TypeScript 7 bullet is cut.
+    - glob is a runtime dependency (`package.json` `dependencies`), inside its declared range.
+
+    `changelog.test.js` 12 of 12.
+
+  - **Fleet, all four at `8d79eda`** (`git diff --stat 8d79eda HEAD`: `CHANGELOG.md` and this file only), each `fleet-check --base main --branch 8d79eda`, exit 0, identical:
+
+    | Site                                                                                            | Pages | Files | Note                                                                                                              |
+    | ----------------------------------------------------------------------------------------------- | ----- | ----- | ----------------------------------------------------------------------------------------------------------------- |
+    | a1k9training                                                                                    | 20    | 571   | —                                                                                                                 |
+    | oxford-medical (`--entry router.js`, `core.longpaths`)                                          | 402   | 3,232 | —                                                                                                                 |
+    | diploma-msc (scratch copy, `get-data`: 799 items in 18 types, `--entry "router.js production"`) | 673   | 1,521 | `Purged css/learna.css: 191.3 KB → 102.0 KB` on both sides; purgecss 9.1.0 on the branch side, read from the copy |
+    | medulla (scratch copy, `get-data` exit 0)                                                       | 1,148 | 1,175 | —                                                                                                                 |
+
+    Every copied `.env` was deleted (four; `find` returns none), and the real sites' `git status` is clean.
+
+  - **Examples and docs at `8d79eda`:** same exit codes as `base`. With the version string masked, every docs difference is 0 lines except the consent page's known snippet (4 lines in `index.html` and `index.md`), plus `generated.css`'s timestamp.
+  - **Gates:** `npm run gates` exit 0 at `8d79eda`.
+  - **Codex** over `f6b6381..HEAD`, exit 0 at `8d79eda` and again at `6829e7e`: "No actionable defects". Green.
+  - **Scope:** `scope-check` exit 0. The scratch junction into the repo was unlinked (`cmd /c rmdir`), and `package.json` is intact.
+  - **Eyeball: looked, by the advisor.** The question: does the 2.18.1 entry claim only what was measured? Its reading: the purgecss facts hold, but four sentences outran them ("only" with `purge`, the claim for every site, glob untraced, the TS 7 bullet). Fixed in `6829e7e`.
+  - **Criteria:**
+    - 1 (#95), 2 (#89), 4 (examples and docs) and 5 (fleet) are met.
+    - 3 (#88) is **Asked**.
+    - 6 (release) is partial. The gates pass locally, but CI on both OS runs on `pull_request` and pushes to `main`/`v2` only (`ci.yml` `on:`), so it waits for the PR.
+    - 7 (PRs closed) waits for the merge.
+  - **Open items:**
+    - **#88: Asked**, as the loop's last act. The question: take TypeScript 7.0.2 now, accepting that all 114 described type aliases in `types/` lose their description and `_assetManifest` loses `private` (plus `rootDir` and four `lib/` JSDoc hints)? Or stay on 5.9 until upstream keeps typedef descriptions, re-checking with the command in `AIKB/upstream.md`?
+    - The `PSEUDO_PART` guard: **out** (a `lib/` change, a non-goal).
+    - CI on both OS: **out** until `/branch-close` opens the PR.
+  - **Offer: unanswered** (the operator is asleep). Reopened from turn 1, with a correction: whether GitHub marks #95 merged when this branch lands depends on the merge method, and recent `main` commits look squashed (inferred). If they are squashed, #95 will need closing by hand.
+  - **Decision:** not ready to close (#88 is Asked). The loop ends here as agreed: push the branch, and the operator runs `/branch-close` after answering #88.
 
 ---
 
