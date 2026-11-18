@@ -138,47 +138,66 @@ describe('the home page carries the whole quick start', () => {
       )
   })
 
-  it('folds the optional Anthropic skills into the Claude Code box, with the README lines', () => {
-    // The optional Anthropic plugin: README.md's "Optional: … frontend-design"
-    // block and the home page's copy must not drift apart, and must name both
-    // skills it is there for (2026-10-13). It sits inside the Claude Code box,
-    // collapsed (operator's call: part of setup, not a band of its own), and
-    // only there: it is a Claude Code plugin.
-    const optional = box('Claude Code').optional
-    expect(optional).toBeDefined()
-    // 2026-11-04: Lighthouse, an npm package rather than a plugin, is offered
-    // in every box; the Anthropic plugin still only in Claude Code's.
-    for (const label of ['Codex', 'Other agent']) {
-      const other = box(label).optional
-      expect(JSON.stringify(other ?? {})).not.toMatch(
-        /anthropic|frontend-design|webapp-testing/i,
-      )
-      expect(other?.code).toBe('npm install -D lighthouse')
-    }
-    expect(optional.skills.at(-1).code).toBe('npm install -D lighthouse')
-    expect(read('README.md').replace(/\r\n/g, '\n')).toContain(
-      '```sh\nnpm install -D lighthouse\n```',
-    )
+  it('offers the optional Anthropic skills in every box, with the README lines', () => {
+    // README.md's "Optional: … frontend-design" block and the home page's
+    // copy must not drift apart, and must name both skills it is there for
+    // (2026-10-13). It sits inside each box, collapsed (operator's call: part
+    // of setup, not a band of its own). 2026-11-18: one `npx skills add` line
+    // per skill, which installs for any agent the skills CLI supports, so
+    // every box offers it (operator's call), not only Claude Code's.
     const readme = read('README.md').replace(/\r\n/g, '\n')
+    expect(readme).toContain('```sh\nnpm install -D lighthouse\n```')
     const section = readme.slice(
       readme.indexOf("**Optional: Anthropic's `frontend-design`"),
     )
     const block = /```sh\n([\s\S]*?)\n```/.exec(section)
     expect(block).not.toBeNull()
-    expect(optional.code).toBe(block[1])
-    const names = optional.skills.map((s) => s.name).join(' ')
-    expect(names).toMatch(/frontend-design/)
-    expect(names).toMatch(/webapp-testing/)
-    expect(optional.skills[1].text).toMatch(/never from file:\/\//)
+    expect(block[1]).toBe(
+      'npx skills add anthropics/skills@frontend-design\nnpx skills add anthropics/skills@webapp-testing',
+    )
     // webapp-testing's own requirements, the README's second block, verbatim.
     const pip = /```sh\n(pip install playwright[\s\S]*?)\n```/.exec(section)
     expect(pip).not.toBeNull()
-    expect(optional.skills[1].code).toBe(pip[1])
-    // The box's Copy button copies its setup lines only, never these.
-    expect(box('Claude Code').code).not.toMatch(/anthropics\/skills|pip/)
+    for (const label of ['Claude Code', 'Codex', 'Other agent']) {
+      const optional = box(label).optional
+      expect(optional, label).toBeDefined()
+      expect(optional.code, label).toBe(block[1])
+      const names = optional.skills.map((s) => s.name).join(' ')
+      expect(names, label).toMatch(/frontend-design/)
+      expect(names, label).toMatch(/webapp-testing/)
+      expect(optional.skills[1].text, label).toMatch(/never from file:\/\//)
+      expect(optional.skills[1].code, label).toBe(pip[1])
+      expect(optional.skills.at(-1).code, label).toBe(
+        'npm install -D lighthouse',
+      )
+      // The box's Copy button copies its setup lines only, never these.
+      expect(box(label).code, label).not.toMatch(/anthropics\/skills|pip/)
+    }
     expect(read('src/pages/index.hbs')).toMatch(
       /<details class="agent-box__optional">/,
     )
+  })
+
+  it('never offers the example-skills plugin, which brings ten other skills', () => {
+    // Until 2026-11-18 the two optional skills came in Anthropic's
+    // example-skills plugin, with ten other example skills loaded into every
+    // session beside them. Ban its install lines wherever a person or an
+    // agent in a consuming site reads install instructions.
+    const files = [
+      'README.md',
+      'GUIDE.md',
+      'llms.txt',
+      'src/models/home.json',
+      'plugins/kiss-ssg/README.md',
+      'plugins/kiss-memory/README.md',
+      ...fs
+        .globSync('plugins/*/skills/**/*.md', { cwd: root })
+        .map((f) => f.replace(/\\/g, '/')),
+    ]
+    for (const rel of files)
+      expect(read(rel), rel).not.toMatch(
+        /example-skills|anthropic-agent-skills|plugin marketplace add anthropics\/skills/,
+      )
   })
 
   it('names the Node floor package.json declares', () => {
