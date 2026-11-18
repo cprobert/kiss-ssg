@@ -435,7 +435,7 @@ every session beside them.
 
 - `npx skills add anthropics/skills@webapp-testing -a claude-code -a codex -y`
   cloned the repo, found 20 skills, installed the one, and exited 0. It wrote
-  `.agents/skills/webapp-testing/` (Codex's folder), `.claude/skills/webapp-testing`
+  `.agents/skills/webapp-testing/` (which it labels "universal: Codex"), `.claude/skills/webapp-testing`
   as a link to it, and `skills-lock.json` (source, commit, hash).
 - **On Windows the link is a junction with an absolute target.** `git add`
   follows it and stages plain files, so a commit carries copies, not the link.

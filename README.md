@@ -161,7 +161,7 @@ npx skills add anthropics/skills@frontend-design
 npx skills add anthropics/skills@webapp-testing
 ```
 
-Each line installs one skill. The [`skills`](https://www.npmjs.com/package/skills) command finds the agents you have, Claude Code, Codex or any of the others it supports, and lets you choose which get it. It sends anonymous usage data unless `DO_NOT_TRACK=1` is set. The second line is the browser skill below. `kiss-site-new` and `kiss-site-review` let it set the visual direction while kiss keeps the structure — layouts, partials, the Sass folder, one view per page — so the site never collapses into a single-file page. `init` does not declare it; it is your choice.
+Each line installs one skill. The [`skills`](https://www.npmjs.com/package/skills) command installs for Claude Code, Codex and the other agents it supports; its README says it detects the ones you have and lets you choose. It sends anonymous usage data unless `DO_NOT_TRACK=1` is set. The second line is the browser skill below. `kiss-site-new` and `kiss-site-review` let it set the visual direction while kiss keeps the structure — layouts, partials, the Sass folder, one view per page — so the site never collapses into a single-file page. `init` does not declare it; it is your choice.
 
 **Optional: Anthropic's `webapp-testing` skill for a browser.** The second line above installs it. It is a Playwright recipe for Python, and the browser comes from Playwright itself, which it needs installed:
 
