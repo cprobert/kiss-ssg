@@ -3,6 +3,28 @@
 Written for people building a site with kiss-ssg, not for people maintaining it.
 Newest first. `/branch-close` adds an entry alongside each version bump.
 
+## 2.18.2 — 2026-11-19
+
+### Upgrading
+
+Only if you installed Anthropic's optional skills. The README and the docs site now install
+`frontend-design` and `webapp-testing` one skill at a time, with the
+[`skills`](https://www.npmjs.com/package/skills) command, instead of Anthropic's
+`example-skills` plugin, which brought ten other example skills into every session beside
+them. Nothing in kiss changed, and a site with the plugin keeps working. To swap, from the
+site's folder:
+
+```sh
+claude plugin uninstall example-skills@anthropic-agent-skills --scope project
+npx skills add anthropics/skills@frontend-design
+npx skills add anthropics/skills@webapp-testing
+```
+
+The `skills` command installs for Codex and other agents too, so the docs site's Codex and
+Other agent boxes now offer both skills. It writes each one to `.agents/skills/`, links it into
+`.claude/skills/`, and records its source in `skills-lock.json`. It sends anonymous usage data
+unless `DO_NOT_TRACK=1` is set.
+
 ## 2.18.1 — 2026-11-16
 
 ### Nothing for a site to change
