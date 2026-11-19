@@ -3,7 +3,7 @@ branch: docs/anthropic-skills-npx
 base: main
 status: open
 opened: 2026-11-18
-scope: README.md, src/models/home.json, src/pages/index.hbs, test/unit/home-quickstart.test.js, test/unit/skill-coverage.test.js, AIKB/upstream.md, CHANGELOG.md, package.json, package-lock.json, plugins/*/.claude-plugin/plugin.json, plugins/*/.codex-plugin/plugin.json, .claude-plugin/marketplace.json, .agents/plugins/marketplace.json, planning/sessions/2026-11-18-anthropic-skills-npx.md
+scope: README.md, src/models/home.json, src/pages/index.hbs, test/unit/home-quickstart.test.js, test/unit/skill-coverage.test.js, AIKB/upstream.md, AIKB/testing.md, CHANGELOG.md, package.json, package-lock.json, plugins/*/.claude-plugin/plugin.json, plugins/*/.codex-plugin/plugin.json, .claude-plugin/marketplace.json, .agents/plugins/marketplace.json, planning/sessions/2026-11-18-anthropic-skills-npx.md
 ---
 
 # Session — 2026-11-18: Anthropic's optional skills through `npx skills`, one at a time
@@ -40,6 +40,8 @@ scope: README.md, src/models/home.json, src/pages/index.hbs, test/unit/home-quic
 **Delegation convention:** none: one session.
 
 ### Amendments
+
+- **2026-11-19 (close):** scope widened to `AIKB/testing.md`, which the docs sweep updated to name what `home-quickstart.test.js` now pins. At the close the operator also asked for a README sentence on what the command writes into a site (`.agents/skills/`, `.claude/skills/`, `skills-lock.json`), and the bump was the proposed patch, 2.18.2.
 
 ## Pulse log
 
