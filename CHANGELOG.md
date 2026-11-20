@@ -21,7 +21,8 @@ npx skills add anthropics/skills@webapp-testing
 ```
 
 The `skills` command installs for Codex and other agents too, so the docs site's Codex and
-Other agent boxes now offer both skills. It writes each one to `.agents/skills/`, links it into
+Other agent boxes now offer both skills. It asks which agents to install to, then the scope:
+choose Project. It writes each one to `.agents/skills/`, links it into
 `.claude/skills/`, and records its source in `skills-lock.json`. It sends anonymous usage data
 unless `DO_NOT_TRACK=1` is set.
 

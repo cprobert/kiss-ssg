@@ -441,8 +441,12 @@ every session beside them.
   follows it and stages plain files, so a commit carries copies, not the link.
   `--copy` writes two plain folders from the start.
 - Run inside Claude Code, it detected the agent and installed without asking.
-  Its README says that in a terminal it detects the installed agents and lets
-  the person choose (not observed here).
+  With Claude Code's environment stripped (`env -i`, 2026-11-20) it asked
+  "Which agents do you want to install to?" over 79 agents, and with `-a`
+  given, "Installation scope": Project (the default, "committed with your
+  project") or Global. With stdin not a TTY it installed nothing, and the first
+  run exited 1 with `SKILLS_PROMPT_REQUIRES_TTY`; the README's lines are for a
+  person at a terminal, who answers both.
 - It sends anonymous usage data unless `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1`
   is set (its README); the probe ran with both.
 

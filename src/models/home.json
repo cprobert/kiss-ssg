@@ -124,7 +124,7 @@
                   "code": "npm install -D lighthouse"
                 }
               ],
-              "note": "The skills command installs for Claude Code, Codex and the other agents it supports, and sends anonymous usage data unless DO_NOT_TRACK=1 is set. init declares neither skill nor Lighthouse, so installing them is your choice."
+              "note": "The skills command installs for Claude Code, Codex and the other agents it supports. It asks which agents, then the scope: choose Project, so the skill is committed with the site. It sends anonymous usage data unless DO_NOT_TRACK=1 is set. init declares neither skill nor Lighthouse, so installing them is your choice."
             }
           },
           {
@@ -152,7 +152,7 @@
                   "code": "npm install -D lighthouse"
                 }
               ],
-              "note": "The skills command installs for Claude Code, Codex and the other agents it supports, and sends anonymous usage data unless DO_NOT_TRACK=1 is set. init declares neither skill nor Lighthouse, so installing them is your choice."
+              "note": "The skills command installs for Claude Code, Codex and the other agents it supports. It asks which agents, then the scope: choose Project, so the skill is committed with the site. It sends anonymous usage data unless DO_NOT_TRACK=1 is set. init declares neither skill nor Lighthouse, so installing them is your choice."
             }
           },
           {
@@ -180,7 +180,7 @@
                   "code": "npm install -D lighthouse"
                 }
               ],
-              "note": "The skills command sends anonymous usage data unless DO_NOT_TRACK=1 is set. init declares neither skill nor Lighthouse, so installing them is your choice."
+              "note": "The skills command asks which agents, then the scope: choose Project, so the skill is committed with the site. It sends anonymous usage data unless DO_NOT_TRACK=1 is set. init declares neither skill nor Lighthouse, so installing them is your choice."
             }
           }
         ]
