@@ -1,7 +1,7 @@
 ---
 branch: docs/anthropic-skills-npx
 base: main
-status: open
+status: closed
 opened: 2026-11-18
 scope: README.md, src/models/home.json, src/pages/index.hbs, test/unit/home-quickstart.test.js, test/unit/skill-coverage.test.js, AIKB/upstream.md, AIKB/testing.md, CHANGELOG.md, package.json, package-lock.json, plugins/*/.claude-plugin/plugin.json, plugins/*/.codex-plugin/plugin.json, .claude-plugin/marketplace.json, .agents/plugins/marketplace.json, planning/sessions/2026-11-18-anthropic-skills-npx.md
 ---
@@ -48,3 +48,35 @@ scope: README.md, src/models/home.json, src/pages/index.hbs, test/unit/home-quic
 ---
 
 <!-- /branch-close → /session-reflect fills the Reflection below and flips status: closed -->
+
+# Session Log — 2026-11-20: Anthropic's optional skills through `npx skills`
+
+**What we shipped:** 2.18.2. The README and all three docs-home agent boxes install `frontend-design` and `webapp-testing` with one `npx skills add anthropics/skills@<skill>` line each, in place of the `example-skills` plugin and its ten other skills (`037948e`). A test pins every box to the README and bans the plugin's install lines from every surface a site reads (red-first: failed at `326af20`). `AIKB/upstream.md` records the `skills` CLI as observed. The changelog's upgrade note gives the swap (`4f442a6`), and the CLI's wording was corrected twice from measurement (`00e7efb`, `b888e12`, `c46a740`).
+
+**Supervision:** emergent at the open, planned from there. The operator opened "Skills" with no brief, then turned it into a question ("sites recommend `npx skills add …`, why don't we?") and decided from the answer. That reframing was the session's best piece of problem framing. Where it would change the work, the operator chose quickly: all three boxes, not just Claude Code's; the patch; both open items, done here. **The checkpoint the operator intended to hold was delegated back.** They chose "I'll look now" and to run the CLI in a terminal, then said "Do it for me". So there was **no human eyeball** on this branch, and no pulse ran. What stood in for both was Claude's Playwright shots of the three boxes with the optional block open, served over HTTP from `docs/`, a stripped-environment run of the CLI, and a fresh Sonnet agent's fact-check of the changelog. All three found something:
+
+- **The stripped-environment run** showed that the shipped sentence "detects the ones you have and lets you choose" was wrong. It asks for agents (79 offered), then a scope.
+- **The fact-check** narrowed the CLI claim to "in a terminal". It also prompted a count of the `example-skills` plugin (12 skills), which settled the "ten other" figure.
+
+**Claude's miss:** the first report called the terminal run "the one thing I couldn't see", and the advisor accepted that. It wasn't true. `env -i` removes the variables the CLI uses to detect Claude Code, and showed the prompts in one command. The wrong sentence survived two commits because nobody checked whether the run was really impossible.
+
+Level: **assisted operator**. The framing and decisions were the operator's; the verification was Claude's, at the operator's request.
+
+**Feedback for next time:**
+
+- **Claude — before saying "I can't observe this", try the cheapest way to observe it.** A CLI that behaves differently under an agent can usually be run as a person would by stripping the agent's environment (`env -i PATH=… HOME=…`) with stdin from `/dev/null`, so a prompt shows and exits instead of hanging. Here that was one command, and it disproved a sentence already committed.
+- **Claude — offer `/branch-pulse` before the close, not only in a report.** The first slice landed and the pulse was offered once, at the end of a long report, and never ran. The close then did a pulse's work in one batch.
+- **Operator — "do it for me" on an eyeball is fine; say who should look.** Claude looking at its own page is not an independent read. When you can't look, name the reader you want instead (the advisor, a fresh agent), as on 2026-11-16.
+- **Process — the fresh-agent changelog check (from 2026-11-16's Feedback) ran here and earned its place.** It found one over-claim the gates and Claude's review had passed. `/branch-close` Step 4a could name it as a step.
+
+**Did we achieve the objective?** Met.
+
+- [x] README and home page give the two `npx skills add` lines, with no `example-skills` lines or "ten/eleven other" sentences: `home-quickstart.test.js`, and grep of `docs/index.html` (3 boxes × 2 lines, 0 `example-skills`).
+- [x] All three boxes offer the two skills and Lighthouse, pinned to the README block: the same test; Playwright text of each box.
+- [x] The ban test was seen to fail on the base: `node scripts/red-first.mjs test/unit/home-quickstart.test.js`, failed at main (`326af20`), 2026-11-18.
+- [x] Both documented lines run in a scratch site exited 0, each installing one skill of 20 found: `.agents/skills/` and `.claude/skills/` held `frontend-design` and `webapp-testing`, and `skills-lock.json` held 2 sources (2026-11-18).
+- [x] `AIKB/upstream.md` records the CLI: version, where it writes, the junction, the lockfile, the prompts, `SKILLS_PROMPT_REQUIRES_TTY`, and a re-check.
+- [x] `node docs` builds (exit 0) and the home page was looked at, **by Claude**, not the operator (Playwright shots of the three boxes, 2026-11-20).
+- [x] `npm run gates` passes (all six, after `c46a740`).
+
+Open: none. Sites that already use the plugin swap with the changelog's three lines, at their own pace.
