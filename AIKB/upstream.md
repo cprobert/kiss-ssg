@@ -431,7 +431,8 @@ Windows, 2026-11-18, in a scratch git repo. The README and the docs home page
 install `frontend-design` and `webapp-testing` with one
 `npx skills add anthropics/skills@<skill>` line each. Until then they came in
 Anthropic's `example-skills` plugin, which loaded ten other example skills into
-every session beside them.
+every session beside them (12 in all, from `anthropics/skills`'
+`.claude-plugin/marketplace.json` through `gh api`, 2026-11-20).
 
 - `npx skills add anthropics/skills@webapp-testing -a claude-code -a codex -y`
   cloned the repo, found 20 skills, installed the one, and exited 0. It wrote
