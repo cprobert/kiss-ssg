@@ -157,13 +157,13 @@ Running `init` in a folder that already has a project is safe: it never overwrit
 **Optional: Anthropic's `frontend-design` skill for the look.** kiss decides how a site is built; it has no opinion on what it looks like. If you want a stronger visual direction — type, colour, spacing, layout character — install Anthropic's `frontend-design` skill beside kiss's, from the site's folder:
 
 ```sh
-claude plugin marketplace add anthropics/skills --scope project
-claude plugin install example-skills@anthropic-agent-skills --scope project
+npx skills add anthropics/skills@frontend-design
+npx skills add anthropics/skills@webapp-testing
 ```
 
-It arrives inside the `example-skills` plugin, alongside eleven other example skills. `kiss-site-new` and `kiss-site-review` let it set the visual direction while kiss keeps the structure — layouts, partials, the Sass folder, one view per page — so the site never collapses into a single-file page. `init` does not declare it; it is your choice.
+Each line installs one skill. The [`skills`](https://www.npmjs.com/package/skills) command installs for Claude Code, Codex and the other agents it supports. In a terminal it asks which agents to install to, then the scope: choose **Project**, so the skill is committed with the site. It sends anonymous usage data unless `DO_NOT_TRACK=1` is set. In the site it writes each skill to `.agents/skills/`, links it into `.claude/skills/`, and records its source in `skills-lock.json`; commit them like any other file. The second line is the browser skill below. `kiss-site-new` and `kiss-site-review` let it set the visual direction while kiss keeps the structure — layouts, partials, the Sass folder, one view per page — so the site never collapses into a single-file page. `init` does not declare it; it is your choice.
 
-**Optional: Anthropic's `webapp-testing` skill for a browser.** The same plugin carries `webapp-testing`, so those two lines install it too. It is a Playwright recipe for Python, and the browser comes from Playwright itself, which it needs installed:
+**Optional: Anthropic's `webapp-testing` skill for a browser.** The second line above installs it. It is a Playwright recipe for Python, and the browser comes from Playwright itself, which it needs installed:
 
 ```sh
 pip install playwright

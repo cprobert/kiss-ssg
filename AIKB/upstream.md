@@ -424,6 +424,42 @@ Get-NetTCPConnection -LocalPort <port> -State Listen
 A listener after the script exits means it still orphans. Stop that `node`
 yourself, and revisit the handoff line if it no longer happens.
 
+### The `skills` CLI: how Anthropic's optional skills install
+
+**Observed:** `skills` 1.9.0 on npm (`vercel-labs/skills`), Windows 11, Git for
+Windows, 2026-11-18, in a scratch git repo. The README and the docs home page
+install `frontend-design` and `webapp-testing` with one
+`npx skills add anthropics/skills@<skill>` line each. Until then they came in
+Anthropic's `example-skills` plugin, which loaded ten other example skills into
+every session beside them (12 in all, from `anthropics/skills`'
+`.claude-plugin/marketplace.json` through `gh api`, 2026-11-20).
+
+- `npx skills add anthropics/skills@webapp-testing -a claude-code -a codex -y`
+  cloned the repo, found 20 skills, installed the one, and exited 0. It wrote
+  `.agents/skills/webapp-testing/` (which it labels "universal: Codex"), `.claude/skills/webapp-testing`
+  as a link to it, and `skills-lock.json` (source, commit, hash).
+- **On Windows the link is a junction with an absolute target.** `git add`
+  follows it and stages plain files, so a commit carries copies, not the link.
+  `--copy` writes two plain folders from the start.
+- Run inside Claude Code, it detected the agent and installed without asking.
+  With Claude Code's environment stripped (`env -i`, 2026-11-20) it asked
+  "Which agents do you want to install to?" over 79 agents, and with `-a`
+  given, "Installation scope": Project (the default, "committed with your
+  project") or Global. With stdin not a TTY it installed nothing, and the first
+  run exited 1 with `SKILLS_PROMPT_REQUIRES_TTY`; the README's lines are for a
+  person at a terminal, who answers both.
+- It sends anonymous usage data unless `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1`
+  is set (its README); the probe ran with both.
+
+**What kiss does:** recommends the command for Anthropic's skills only. kiss's
+own plugins stay on the Claude Code and Codex marketplaces, whose plugin
+versions follow `package.json` (`scripts/sync-plugin-versions.mjs`); `init`
+declares neither Anthropic skill.
+**Re-check:** in an empty folder with `git init`, run the line above, then
+`git add -A` and `git status --short`: one skill's files under `.agents/` and
+`.claude/`, and `skills-lock.json`. Then `npx skills --help` for the flags the
+README relies on.
+
 ### Moodle's SCORM 1.2 API forgets a commit that failed in transit
 
 **Observed:** Moodle 5.0 (`MOODLE_500_STABLE`,
